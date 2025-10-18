@@ -64,9 +64,16 @@ var target_rotation: float = 0.0
 
 # Animation
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
+@onready var pen_sprite: Sprite2D = $Pen
 var is_moving: bool = false
 var animation_velocity_threshold_walk: float = 100.0  ## Speed needed to trigger walk
 var animation_velocity_threshold_idle: float = 50.0   ## Speed below which we go idle (hysteresis)
+
+# Pen bobbing
+var pen_bob_time: float = 0.0
+var pen_base_position: Vector2 = Vector2(25, -50)
+var pen_bob_amount: float = 6.0
+var pen_bob_speed: float = 15.0
 
 
 func _ready() -> void:
@@ -339,6 +346,34 @@ func update_animation() -> void:
 		# This prevents restarting the same animation
 		if current_anim != target_anim:
 			animated_sprite.play(target_anim)
+
+	# Update pen bobbing animation
+	update_pen_bob()
+
+
+func update_pen_bob() -> void:
+	"""Bob the pen up and down when walking and position based on facing direction"""
+	if not pen_sprite:
+		return
+
+	# Flip pen position and rotation based on sprite flip (player facing direction)
+	var pen_x = pen_base_position.x
+	var pen_rotation = -0.5
+	if animated_sprite and animated_sprite.flip_h:
+		pen_x = -pen_base_position.x
+		pen_rotation = 0.5
+
+	pen_sprite.rotation = pen_rotation
+
+	# Only bob when walking
+	if is_moving and is_grounded:
+		pen_bob_time += get_process_delta_time()
+		var bob_offset = sin(pen_bob_time * pen_bob_speed) * pen_bob_amount
+		pen_sprite.position = Vector2(pen_x, pen_base_position.y + bob_offset)
+	else:
+		# Reset to base position when not moving
+		pen_sprite.position = Vector2(pen_x, pen_base_position.y)
+		pen_bob_time = 0.0
 
 
 ## Damage the player
