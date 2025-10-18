@@ -11,7 +11,7 @@ class_name CameraController
 @export var follow_offset: Vector2 = Vector2.ZERO  ## Offset from player position
 
 @export_group("Rotation Settings")
-@export var rotation_speed: float = 20.0  ## Rotation smoothing speed (higher = faster response)
+@export var rotation_speed: float = 50.0  ## Rotation smoothing speed (higher = faster response)
 @export var enable_rotation: bool = true  ## Toggle camera rotation
 
 @export_group("Zoom Settings")
@@ -69,16 +69,17 @@ func follow_player(delta: float) -> void:
 
 ## Rotate camera to match player's gravity direction
 func rotate_to_gravity(delta: float) -> void:
-	# Camera should rotate so that gravity always points "down" on screen
-	# This makes the planet appear at the bottom and the player stands on it naturally
-	# The world rotates around the player, not the other way around
+	# Camera should rotate so that the player's feet always point down on screen
+	# This makes gravity always pull "down" and the player stands upright naturally
 
-	# Keep camera upright (don't rotate with player)
-	# Simply counter-rotate the player's rotation to keep view stable
-	target_rotation = -player.rotation
+	# We want gravity to point down on screen
+	# gravity_direction points toward the planet, so we want that to point down (angle = PI/2)
+	# Camera's global rotation should make gravity_direction point downward
+	var desired_down = player.gravity_direction
+	target_rotation = desired_down.angle() - PI / 2.0
 
 	# Smooth rotation using lerp_angle to handle angle wrapping correctly
-	rotation = lerp_angle(rotation, target_rotation, rotation_speed * delta)
+	global_rotation = lerp_angle(global_rotation, target_rotation, rotation_speed * delta)
 
 
 ## Adjust zoom based on player velocity

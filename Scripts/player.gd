@@ -6,10 +6,10 @@ class_name Player
 
 @export_group("Movement")
 @export var move_speed: float = 500.0
-@export var jump_force: float = 7000.0
-@export var jump_gravity_multiplier: float = 4.0  ## Jump force scales with gravity strength
-@export var jump_grace_period: float = 0.5  ## Seconds of reduced gravity after jump
-@export var jump_grace_gravity_reduction: float = 0.1  ## Gravity multiplier during grace period (0.1 = 90% reduction)
+@export var jump_force: float = 15000.0
+@export var jump_gravity_multiplier: float = 6.0  ## Jump force scales with gravity strength
+@export var jump_grace_period: float = 0.8  ## Seconds of reduced gravity after jump
+@export var jump_grace_gravity_reduction: float = 0.05  ## Gravity multiplier during grace period (0.05 = 95% reduction)
 @export var air_control: float = 0.9  ## Movement control while airborne (0-1)
 @export var max_speed: float = 1000.0  ## Maximum velocity cap
 
@@ -278,12 +278,17 @@ func handle_jump() -> void:
 		# Calculate adaptive jump force based on current gravity strength
 		var adaptive_jump = jump_force + (current_gravity_strength * jump_gravity_multiplier)
 
-		# Jump perpendicular to gravity (away from planet)
-		var jump_direction = -gravity_direction
+		# Jump perpendicular to the ground surface (using ground normal)
+		# This ensures we jump "away" from whatever surface we're standing on
+		var jump_direction = ground_normal
 		velocity += jump_direction * adaptive_jump
 
 		# Activate jump grace period (reduced gravity for smoother jump arc)
 		jump_grace_timer = jump_grace_period
+
+		# Immediately set as not grounded to prevent stick force from canceling jump
+		is_grounded = false
+		ground_coyote_time = 0.0
 
 
 ## Check if player is on the ground

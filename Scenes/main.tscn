@@ -19,6 +19,9 @@ color = Color(0.05, 0.05, 0.2, 1)
 position = Vector2(576, 200)
 
 [node name="Camera2D" type="Camera2D" parent="Player"]
+ignore_rotation = false
+limit_enabled = false
+rotation_smoothing_enabled = true
 script = ExtResource("3_camera")
 
 [node name="Planets" type="Node2D" parent="."]
