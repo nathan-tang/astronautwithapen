@@ -1,8 +1,34 @@
-[gd_scene load_steps=4 format=3 uid="uid://c5h8x3kp2wqrn"]
+[gd_scene load_steps=9 format=3 uid="uid://cio4n0t5qru12"]
 
-[ext_resource type="Script" path="res://Scripts/main_menu.gd" id="1_menu"]
-[ext_resource type="Script" uid="uid://3qxao6p3yh8e" path="res://Scripts/star_background.gd" id="2_stars"]
-[ext_resource type="Texture2D" path="res://Assets/title.png" id="3_title"]
+[ext_resource type="Script" uid="uid://gs74n4plnb2h" path="res://Scripts/main_menu.gd" id="1_menu"]
+[ext_resource type="Script" path="res://Scripts/star_background.gd" id="2_stars"]
+[ext_resource type="Texture2D" uid="uid://crp8jotcqlnho" path="res://Assets/title.png" id="3_title"]
+[ext_resource type="Script" uid="uid://4ednw0yeinmj" path="res://Scripts/dvd_bounce.gd" id="4_bounce"]
+[ext_resource type="Texture2D" uid="uid://sfourhm5uaxe" path="res://Assets/Sprites/character_green_idle.png" id="5_idle"]
+[ext_resource type="Texture2D" uid="uid://ejxkkcax2fg6" path="res://Assets/Sprites/character_green_walk_a.png" id="6_walk_a"]
+[ext_resource type="Texture2D" uid="uid://dkfhr26qnd68q" path="res://Assets/Sprites/character_green_walk_b.png" id="7_walk_b"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_bounce"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_idle")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("6_walk_a")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_walk_b")
+}],
+"loop": true,
+"name": &"walk",
+"speed": 5.0
+}]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -23,18 +49,27 @@ grow_vertical = 2
 color = Color(0.05, 0.05, 0.2, 1)
 
 [node name="Stars" type="Node2D" parent="."]
-z_index = -50
+z_index = 2
 script = ExtResource("2_stars")
-star_count = 400
+star_count = 2000
 star_min_size = 2.0
 star_max_size = 5.0
-star_min_brightness = 0.3
-parallax_strength = 0.0
 enable_parallax = false
+parallax_strength = 0.0
 enable_drift = true
 drift_speed = 10.0
 
+[node name="BouncingPlayer" type="AnimatedSprite2D" parent="."]
+z_index = 5
+scale = Vector2(1.5, 1.5)
+sprite_frames = SubResource("SpriteFrames_bounce")
+animation = &"walk"
+autoplay = "walk"
+script = ExtResource("4_bounce")
+speed = 150.0
+
 [node name="MarginContainer" type="MarginContainer" parent="."]
+z_index = 10
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -49,7 +84,7 @@ theme_override_constants/margin_bottom = 100
 [node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
-size_flags_vertical = 8
+size_flags_vertical = 4
 theme_override_constants/separation = 40
 
 [node name="TitleImage" type="TextureRect" parent="MarginContainer/VBoxContainer"]

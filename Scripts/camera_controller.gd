@@ -15,7 +15,7 @@ class_name CameraController
 @export var enable_rotation: bool = true  ## Toggle camera rotation
 
 @export_group("Zoom Settings")
-@export var base_zoom: Vector2 = Vector2(0.8, 0.8)
+@export var base_zoom: Vector2 = Vector2(0.4, 0.4)
 @export var dynamic_zoom: bool = false  ## Zoom based on player velocity
 @export var max_zoom_out: float = 0.5  ## Min zoom when moving fast
 @export var zoom_speed: float = 2.0
