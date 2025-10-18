@@ -363,6 +363,15 @@ func take_damage(amount: float, damage_source_pos: Vector2 = Vector2.ZERO) -> vo
 	# Flash red for damage feedback
 	_flash_red()
 
+	# Play damage sound
+	var damage_sound = AudioStreamPlayer.new()
+	damage_sound.stream = load("res://Assets/sounds/damage.mp3")
+	damage_sound.volume_db = -5.0
+	add_child(damage_sound)
+	damage_sound.play()
+	# Clean up sound after it finishes
+	damage_sound.finished.connect(damage_sound.queue_free)
+
 	if current_health <= 0:
 		die()
 

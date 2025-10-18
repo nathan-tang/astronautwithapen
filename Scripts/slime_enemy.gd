@@ -72,6 +72,10 @@ var target_rotation: float = 0.0
 # Visual components
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 
+# Audio
+var slime_sound: AudioStreamPlayer = null
+var player_ref: Node = null
+
 
 func _ready() -> void:
 	# Add to enemies group for homing bullets
@@ -86,7 +90,7 @@ func _ready() -> void:
 
 	# Set up physics
 	gravity_scale = 0.0  # Use custom planetary gravity, not Godot's default
-	mass = 0.3
+	mass = 1.0
 
 	# Enable contact monitoring for ground detection
 	contact_monitor = true
@@ -98,6 +102,16 @@ func _ready() -> void:
 	# Start idle animation
 	if animated_sprite:
 		animated_sprite.play("idle")
+
+	# Find player reference
+	player_ref = get_tree().get_first_node_in_group("player")
+
+	# Create slime sound (plays when near player)
+	slime_sound = AudioStreamPlayer.new()
+	slime_sound.stream = load("res://Assets/sounds/slime.mp3")
+	slime_sound.volume_db = -20.0
+	slime_sound.autoplay = false
+	add_child(slime_sound)
 
 	# Initialize position tracking
 	last_position = global_position
@@ -113,6 +127,16 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if is_dead:
 		return
+
+	# Check distance to player and play/stop slime sound
+	if player_ref and slime_sound:
+		var distance_to_player = global_position.distance_to(player_ref.global_position)
+		if distance_to_player < 500.0:  # Play sound when within 500 pixels
+			if not slime_sound.playing:
+				slime_sound.play()
+		else:
+			if slime_sound.playing:
+				slime_sound.stop()
 
 	# Update primary planet
 	gravity_component.update_primary_planet(global_position)

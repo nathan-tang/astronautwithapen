@@ -27,6 +27,7 @@ var ground_coyote_time: float = 0.0
 # Visual components
 @onready var sprite: Sprite2D = $Sprite2D
 var fuse_particles: GPUParticles2D = null
+var fuse_sound: AudioStreamPlayer = null
 
 
 func _ready() -> void:
@@ -51,6 +52,13 @@ func _ready() -> void:
 
 	# Connect body collision signal
 	body_entered.connect(_on_body_entered)
+
+	# Play fuse sound
+	fuse_sound = AudioStreamPlayer.new()
+	fuse_sound.stream = load("res://Assets/sounds/fuse.mp3")
+	fuse_sound.volume_db = -20.0
+	add_child(fuse_sound)
+	fuse_sound.play()
 
 
 func _physics_process(delta: float) -> void:
@@ -165,12 +173,23 @@ func explode() -> void:
 	if sprite:
 		sprite.visible = false
 
-	# Stop fuse particles
+	# Stop fuse particles and sound
 	if fuse_particles:
 		fuse_particles.emitting = false
+	if fuse_sound:
+		fuse_sound.stop()
 
 	# Emit signal
 	exploded.emit(global_position)
+
+	# Play explosion sound
+	var explosion_sound = AudioStreamPlayer.new()
+	explosion_sound.stream = load("res://Assets/sounds/bomb.mp3")
+	explosion_sound.volume_db = 0.0
+	get_tree().root.add_child(explosion_sound)
+	explosion_sound.play()
+	# Clean up sound after it finishes
+	explosion_sound.finished.connect(explosion_sound.queue_free)
 
 	# Create explosion effect
 	create_explosion_effect()

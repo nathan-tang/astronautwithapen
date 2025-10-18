@@ -21,8 +21,9 @@ signal hit_target(body: Node2D, position: Vector2)
 
 @export_group("Explosion Settings")
 @export var explosion_radius: float = 100.0
-@export var explosion_force: float = 3000.0
-@export var explosion_damage: float = 15.0  ## Damage dealt to enemies in explosion radius
+@export var explosion_force: float = 150.0
+@export var explosion_damage: float = 10.0  ## Damage dealt to enemies in explosion radius
+@export var player_impulse_multiplier: float = 200.0
 
 # State
 var time_alive: float = 0.0
@@ -62,6 +63,13 @@ func _ready() -> void:
 	# Connect collision signal
 	body_entered.connect(_on_body_entered)
 
+	# Play firework sound while flying
+	var firework_sound = AudioStreamPlayer.new()
+	firework_sound.stream = load("res://Assets/sounds/firework.mp3")
+	firework_sound.volume_db = -15.0
+	add_child(firework_sound)
+	firework_sound.play()
+
 
 func _physics_process(delta: float) -> void:
 	# Accelerate to max speed
@@ -99,8 +107,9 @@ func apply_homing(delta: float) -> void:
 	if not is_instance_valid(current_target) or (current_target is SlimeEnemy and current_target.is_dead):
 		current_target = find_nearest_slime()
 
-	# If no valid target, continue straight
+	# If no valid target, continue straight in initial direction
 	if not current_target:
+		linear_velocity = direction * current_speed
 		return
 
 	# Check if target is within range
@@ -171,6 +180,23 @@ func _on_body_entered(body: Node) -> void:
 	create_impact_effect()
 	apply_explosion_force()
 	queue_free()
+	# Decrement hits remaining
+	hits_remaining -= 1
+
+	# Destroy if no hits remaining
+	if hits_remaining <= 0:
+		# Play gun sound on impact
+		var gun_sound = AudioStreamPlayer.new()
+		gun_sound.stream = load("res://Assets/sounds/gun.mp3")
+		gun_sound.volume_db = -10.0
+		get_tree().root.add_child(gun_sound)
+		gun_sound.play()
+		# Clean up sound after it finishes
+		gun_sound.finished.connect(gun_sound.queue_free)
+
+		create_impact_effect()
+		apply_explosion_force()
+		queue_free()
 
 
 func setup_trail_particles() -> void:
@@ -285,7 +311,7 @@ func apply_explosion_force() -> void:
 						body.take_damage(damage_to_deal)
 			elif body is CharacterBody2D:
 				# For CharacterBody2D (like player), add to velocity directly
-				body.velocity += impulse
+				body.velocity += impulse * player_impulse_multiplier
 
 
 func initialize(spawn_position: Vector2, fire_direction: Vector2) -> void:
