@@ -11,9 +11,13 @@ config_version=5
 [application]
 
 config/name="Astronaut with a Pen"
-run/main_scene="res://Scenes/main.tscn"
+run/main_scene="res://Scenes/main_menu.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 config/icon="res://icon.svg"
+
+[autoload]
+
+GameSettings="*res://Scripts/game_settings.gd"
 
 [input]
 

@@ -11,18 +11,17 @@ class_name CameraController
 @export var follow_offset: Vector2 = Vector2.ZERO  ## Offset from player position
 
 @export_group("Rotation Settings")
-@export var rotation_speed: float = 50.0  ## Rotation smoothing speed (higher = faster response)
+@export var rotation_speed: float = 1.0  ## Rotation smoothing speed (higher = faster response)
 @export var enable_rotation: bool = true  ## Toggle camera rotation
 
 @export_group("Zoom Settings")
-@export var base_zoom: Vector2 = Vector2(1.0, 1.0)
+@export var base_zoom: Vector2 = Vector2(0.8, 0.8)
 @export var dynamic_zoom: bool = false  ## Zoom based on player velocity
-@export var max_zoom_out: float = 0.8  ## Min zoom when moving fast
+@export var max_zoom_out: float = 0.5  ## Min zoom when moving fast
 @export var zoom_speed: float = 2.0
 
 # Internal state
 var target_rotation: float = 0.0
-
 
 func _ready() -> void:
 	# Auto-find player if not set
@@ -67,19 +66,35 @@ func follow_player(delta: float) -> void:
 	global_position = global_position.lerp(target_position, follow_speed * delta)
 
 
-## Rotate camera to match player's gravity direction
+## Rotate camera to point toward the primary/closest planet
 func rotate_to_gravity(delta: float) -> void:
-	# Camera should rotate so that the player's feet always point down on screen
-	# This makes gravity always pull "down" and the player stands upright naturally
+	# Camera should rotate so that the primary planet is always "down" on screen
 
-	# We want gravity to point down on screen
-	# gravity_direction points toward the planet, so we want that to point down (angle = PI/2)
-	# Camera's global rotation should make gravity_direction point downward
-	var desired_down = player.gravity_direction
-	target_rotation = desired_down.angle() - PI / 2.0
+	# Get the primary planet (or closest if no primary)
+	var target_planet = player.gravity_component.current_primary_planet
 
-	# Smooth rotation using lerp_angle to handle angle wrapping correctly
-	global_rotation = lerp_angle(global_rotation, target_rotation, rotation_speed * delta)
+	if target_planet == null:
+		# Fall back to finding closest planet
+		var planets = get_tree().get_nodes_in_group("planets")
+		var closest_planet: Planet = null
+		var closest_distance = INF
+
+		for planet in planets:
+			if planet is Planet:
+				var distance = player.global_position.distance_to(planet.global_position)
+				if distance < closest_distance:
+					closest_distance = distance
+					closest_planet = planet
+
+		target_planet = closest_planet
+
+	if target_planet != null:
+		# Direction from player to planet
+		var direction_to_planet = (target_planet.global_position - player.global_position).normalized()
+		target_rotation = direction_to_planet.angle() - PI / 2.0
+
+		# Smooth rotation using lerp_angle to handle angle wrapping correctly
+		global_rotation = lerp_angle(global_rotation, target_rotation, rotation_speed * delta)
 
 
 ## Adjust zoom based on player velocity

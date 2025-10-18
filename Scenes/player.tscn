@@ -6,8 +6,9 @@
 [ext_resource type="Texture2D" uid="uid://dkfhr26qnd68q" path="res://Assets/Sprites/character_green_walk_b.png" id="4_walk_b"]
 [ext_resource type="Texture2D" uid="uid://cjgsw5hsf0uhs" path="res://Assets/Sprites/character_green_jump.png" id="5_jump"]
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_player"]
-radius = 16.0
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_player"]
+radius = 12.0
+height = 32.0
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_player"]
 animations = [{
@@ -40,12 +41,16 @@ animations = [{
 }]
 
 [node name="Player" type="CharacterBody2D" groups=["player"]]
-safe_margin = 0.08
+motion_mode = 1
+safe_margin = 1.0
+wall_min_slide_angle = 0.0
+floor_stop_on_slope = false
+floor_max_angle = 1.5708
 script = ExtResource("1_player")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(0, -48)
-shape = SubResource("CircleShape2D_player")
+shape = SubResource("CapsuleShape2D_player")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 z_index = 1

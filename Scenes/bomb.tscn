@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3 uid="uid://5x1njex56fhl"]
+
+[ext_resource type="Script" uid="uid://c8xmm7rtlxdpk" path="res://Scripts/bomb.gd" id="1_bomb"]
+[ext_resource type="Texture2D" uid="uid://dm858vqilikcp" path="res://Assets/Sprites/red_bullet.png" id="2_sprite"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_1"]
+radius = 40.0
+
+[node name="Bomb" type="RigidBody2D"]
+script = ExtResource("1_bomb")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_sprite")
+region_enabled = true
+region_rect = Rect2(159.61511, 127.583725, 16.715515, 17.256302)
+scale = Vector2(5, 5)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_1")
