@@ -15,6 +15,7 @@ signal hit_target(body: Node2D, position: Vector2)
 @export_group("Explosion Settings")
 @export var explosion_radius: float = 100.0
 @export var explosion_force: float = 3000.0
+@export var explosion_damage: float = 15.0  ## Damage dealt to enemies in explosion radius
 
 # State
 var time_alive: float = 0.0
@@ -155,7 +156,7 @@ func create_impact_effect() -> void:
 
 
 func apply_explosion_force() -> void:
-	"""Apply force to nearby physics objects (same as bomb)"""
+	"""Apply force to nearby physics objects and damage enemies"""
 	# Get all bodies in the explosion radius
 	var space_state = get_world_2d().direct_space_state
 	var query = PhysicsShapeQueryParameters2D.new()
@@ -177,7 +178,14 @@ func apply_explosion_force() -> void:
 
 			# Apply force based on body type
 			if body is RigidBody2D:
-				body.apply_central_impulse(impulse)
+				# Don't damage other bullets or bombs, only enemies
+				if not body is Bullet and not body is Bomb:
+					body.apply_central_impulse(impulse)
+
+					# Deal damage to enemies (SlimeEnemy is a RigidBody2D)
+					if body.has_method("take_damage"):
+						var damage_to_deal = explosion_damage * falloff
+						body.take_damage(damage_to_deal)
 			elif body is CharacterBody2D:
 				# For CharacterBody2D (like player), add to velocity directly
 				body.velocity += impulse

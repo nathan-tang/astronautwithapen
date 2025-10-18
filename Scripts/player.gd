@@ -8,6 +8,12 @@ class_name Player
 @export var max_health: float = 100.0
 @export var max_ink: float = 100.0
 
+@export_group("Damage")
+@export var invincibility_duration: float = 1.0  ## Invincibility time after taking damage
+@export var damage_flash_duration: float = 0.1  ## Duration of red flash effect
+@export var knockback_force: float = 800.0  ## Force applied on taking damage
+@export var knockback_upward_multiplier: float = 0.5  ## Extra upward component for knockback
+
 @export_group("Movement")
 @export var move_speed: float = 500.0
 @export var jump_force: float = 1000.0
@@ -31,6 +37,11 @@ var gravity_component: GravityEntity
 # Stats
 var current_health: float = 100.0
 var current_ink: float = 100.0
+
+# Damage state
+var is_invincible: bool = false
+var invincibility_timer: float = 0.0
+var last_damage_source_position: Vector2 = Vector2.ZERO  ## Position of what damaged us
 
 # Signals for UI updates
 signal health_changed(new_health: float, max_health: float)
@@ -78,6 +89,15 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	# 0. Update invincibility timer
+	if is_invincible:
+		invincibility_timer -= delta
+		if invincibility_timer <= 0:
+			is_invincible = false
+			# Ensure sprite is fully visible when invincibility ends
+			if animated_sprite:
+				animated_sprite.modulate = Color.WHITE
+
 	# 1. Calculate net gravity from all sources
 	var net_gravity = gravity_component.calculate_gravity(global_position)
 
@@ -322,11 +342,56 @@ func update_animation() -> void:
 
 
 ## Damage the player
-func take_damage(amount: float) -> void:
+func take_damage(amount: float, damage_source_pos: Vector2 = Vector2.ZERO) -> void:
+	# Ignore damage if invincible
+	if is_invincible:
+		return
+
 	current_health = max(0, current_health - amount)
 	health_changed.emit(current_health, max_health)
+
+	# Store damage source position
+	last_damage_source_position = damage_source_pos
+
+	# Activate invincibility
+	is_invincible = true
+	invincibility_timer = invincibility_duration
+
+	# Apply knockback away from damage source
+	_apply_knockback()
+
+	# Flash red for damage feedback
+	_flash_red()
+
 	if current_health <= 0:
 		die()
+
+
+func _apply_knockback() -> void:
+	"""Apply knockback force away from damage source"""
+	if last_damage_source_position == Vector2.ZERO:
+		# No damage source position, knockback away from gravity (upward)
+		velocity += -gravity_direction * knockback_force
+	else:
+		# Knockback away from damage source
+		var knockback_direction = (global_position - last_damage_source_position).normalized()
+		velocity += knockback_direction * knockback_force
+
+		# Also add upward component (away from gravity) for more dynamic knockback
+		velocity += -gravity_direction * knockback_force * knockback_upward_multiplier
+
+
+func _flash_red() -> void:
+	"""Flash sprite red briefly for damage feedback"""
+	if not animated_sprite:
+		return
+
+	animated_sprite.modulate = Color.RED
+	await get_tree().create_timer(damage_flash_duration).timeout
+
+	# Only restore if still valid and not dead
+	if is_instance_valid(self) and is_instance_valid(animated_sprite):
+		animated_sprite.modulate = Color.WHITE
 
 
 ## Heal the player

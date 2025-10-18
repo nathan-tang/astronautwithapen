@@ -10,7 +10,12 @@ signal exploded(position: Vector2)
 @export var fuse_time: float = 3.0  ## Time before auto-detonation
 @export var explosion_radius: float = 150.0
 @export var explosion_force: float = 5000.0
+<<<<<<< HEAD
 @export var player_explosion_multiplier: float = 2.0  ## Extra force multiplier for player
+=======
+@export var explosion_damage: float = 25.0  ## Damage dealt to enemies in explosion radius
+@export var player_explosion_multiplier: float = 3.0  ## Extra force multiplier for player
+>>>>>>> 49f0825 (add slime enemy)
 @export var explode_on_impact: bool = false  ## Explode immediately on collision
 
 # State
@@ -224,7 +229,7 @@ func create_explosion_effect() -> void:
 
 
 func apply_explosion_force() -> void:
-	"""Apply force to nearby physics objects"""
+	"""Apply force to nearby physics objects and damage enemies"""
 	# Get all bodies in the explosion radius
 	var space_state = get_world_2d().direct_space_state
 	var query = PhysicsShapeQueryParameters2D.new()
@@ -246,8 +251,19 @@ func apply_explosion_force() -> void:
 
 			# Apply force based on body type
 			if body is RigidBody2D:
+<<<<<<< HEAD
 				body.apply_central_impulse(impulse)
 				print("Applied impulse to RigidBody2D: ", impulse)
+=======
+				# Don't damage other bombs, only enemies
+				if not body is Bomb:
+					body.apply_central_impulse(impulse)
+
+					# Deal damage to enemies (SlimeEnemy is a RigidBody2D)
+					if body.has_method("take_damage"):
+						var damage = explosion_damage * falloff
+						body.take_damage(damage)
+>>>>>>> 49f0825 (add slime enemy)
 			elif body is CharacterBody2D:
 				# For CharacterBody2D (like player), use external_velocity to apply force over time
 				var player_impulse = impulse * player_explosion_multiplier
