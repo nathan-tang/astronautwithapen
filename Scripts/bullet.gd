@@ -79,9 +79,9 @@ func setup_trail_particles() -> void:
 	"""Create trailing particle effect"""
 	trail_particles = GPUParticles2D.new()
 	trail_particles.emitting = true
-	trail_particles.amount = 20
-	trail_particles.lifetime = 0.3
-	trail_particles.explosiveness = 0.0
+	trail_particles.amount = 50  # More particles for dramatic effect
+	trail_particles.lifetime = 0.2  # Longer trail
+	trail_particles.explosiveness = 0.2
 	trail_particles.local_coords = false
 	trail_particles.process_material = create_trail_material()
 	add_child(trail_particles)
@@ -92,19 +92,20 @@ func create_trail_material() -> ParticleProcessMaterial:
 	var particle_mat = ParticleProcessMaterial.new()
 	particle_mat.particle_flag_disable_z = true
 	particle_mat.direction = Vector3(0, 0, 0)
-	particle_mat.spread = 10.0
-	particle_mat.initial_velocity_min = 10.0
-	particle_mat.initial_velocity_max = 30.0
+	particle_mat.spread = 50.0  # Wider spread
+	particle_mat.initial_velocity_min = 20.0  # Faster particles
+	particle_mat.initial_velocity_max = 50.0
 	particle_mat.gravity = Vector3(0, 0, 0)
-	particle_mat.damping_min = 100.0
-	particle_mat.damping_max = 150.0
-	particle_mat.scale_min = 0.4
-	particle_mat.scale_max = 0.8
+	particle_mat.damping_min = 50.0  # Less damping = longer visible trail
+	particle_mat.damping_max = 100.0
+	particle_mat.scale_min = 5.0  # Bigger particles
+	particle_mat.scale_max = 7.5
 
-	# Trail color fades out (cyan/blue)
+	# Trail color fades out (bright cyan/blue with more vibrant start)
 	var gradient = Gradient.new()
-	gradient.add_point(0.0, Color.CYAN)
-	gradient.add_point(1.0, Color(0.0, 1.0, 1.0, 0.0))
+	gradient.add_point(0.0, Color(0.0, 2.0, 2.5, 1.0))  # Super bright cyan at start
+	gradient.add_point(0.3, Color.CYAN)  # Normal cyan
+	gradient.add_point(1.0, Color(0.0, 1.0, 1.0, 0.0))  # Fade to transparent
 	var gradient_texture = GradientTexture1D.new()
 	gradient_texture.gradient = gradient
 	particle_mat.color_ramp = gradient_texture

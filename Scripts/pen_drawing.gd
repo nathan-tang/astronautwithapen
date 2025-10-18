@@ -15,9 +15,12 @@ signal shape_recognized(shape_type: ShapeRecognizer.ShapeType, points: Array[Vec
 @export var draw_smoothness: float = 0.5  ## Smoothing factor for path (0-1)
 
 @export_group("Visual Settings")
-@export var line_width: float = 3.0
+@export var line_width: float = 5.0
 @export var line_color: Color = Color.WHITE
 @export var line_alpha: float = 0.8
+@export var success_color: Color = Color.GREEN
+@export var failure_color: Color = Color.RED
+@export var feedback_duration: float = 0.3
 
 @export_group("Particle Settings")
 @export var enable_particles: bool = true
@@ -149,14 +152,12 @@ func finish_drawing() -> void:
 			var detected_shape = shape_recognizer.detect_shape(current_points)
 			shape_recognized.emit(detected_shape, current_points.duplicate())
 
-			# Spawn projectiles based on shape
+			# Spawn projectiles based on shape (this will call show_drawing_feedback)
 			if spawn_projectiles:
 				spawn_projectile_for_shape(detected_shape, current_points)
-
-	# Clear the visual line after a short delay
-	await get_tree().create_timer(0.5).timeout
-	draw_line.clear_points()
-	current_points.clear()
+	else:
+		# No shape drawn, just clear
+		clear_drawing()
 
 
 func clear_drawing() -> void:
@@ -226,14 +227,15 @@ func spawn_bomb(points: Array[Vector2]) -> void:
 	# Check if player has enough ink
 	if player == null or not player.use_ink(bomb_ink_cost):
 		print("Not enough ink to spawn bomb! Need ", bomb_ink_cost)
+		show_drawing_feedback(false)
 		return
 
-	# Calculate centroid and convert to global coordinates
-	var centroid = calculate_centroid(points)
-	var global_centroid = to_global(centroid)
+	# Calculate bounding box center (better for circles with overlap)
+	var center = calculate_bounding_box_center(points)
+	var global_center = to_global(center)
 
 	# Spawn red particles for bomb creation
-	spawn_shape_particles(global_centroid, Color.RED)
+	spawn_shape_particles(global_center, Color.RED)
 
 	# Load and instance bomb scene
 	var bomb_scene = load("res://Scenes/bomb.tscn")
@@ -243,7 +245,10 @@ func spawn_bomb(points: Array[Vector2]) -> void:
 	get_tree().root.add_child(bomb)
 
 	# Initialize bomb with zero velocity (will be affected by planetary gravity)
-	bomb.initialize(global_centroid, Vector2.ZERO)
+	bomb.initialize(global_center, Vector2.ZERO)
+
+	# Show success feedback
+	show_drawing_feedback(true)
 
 
 func spawn_bullet(points: Array[Vector2]) -> void:
@@ -254,6 +259,7 @@ func spawn_bullet(points: Array[Vector2]) -> void:
 	# Check if player has enough ink
 	if player == null or not player.use_ink(bullet_ink_cost):
 		print("Not enough ink to spawn bullet! Need ", bullet_ink_cost)
+		show_drawing_feedback(false)
 		return
 
 	# Calculate centroid
@@ -282,12 +288,16 @@ func spawn_bullet(points: Array[Vector2]) -> void:
 	# Initialize bullet with direction (bullet.gd will apply velocity)
 	bullet.initialize(global_spawn_pos, path_direction)
 
+	# Show success feedback
+	show_drawing_feedback(true)
+
 
 func spawn_unknown_shape_effect(points: Array[Vector2]) -> void:
 	"""Spawn red error particles for unrecognized shapes"""
 	var centroid = calculate_centroid(points)
 	var global_centroid = to_global(centroid)
 	spawn_shape_particles(global_centroid, Color.RED)
+	show_drawing_feedback(false)
 
 
 func spawn_shape_particles(position: Vector2, color: Color) -> void:
@@ -297,8 +307,8 @@ func spawn_shape_particles(position: Vector2, color: Color) -> void:
 	particles.global_position = position
 	particles.emitting = true
 	particles.one_shot = true
-	particles.explosiveness = 1.0
-	particles.amount = 30
+	particles.explosiveness = 5.0
+	particles.amount = 100
 	particles.lifetime = 1.0
 	particles.local_coords = false
 
@@ -311,8 +321,8 @@ func spawn_shape_particles(position: Vector2, color: Color) -> void:
 	particle_mat.gravity = Vector3(0, 100, 0)  # Slight downward drift
 	particle_mat.damping_min = 50.0
 	particle_mat.damping_max = 100.0
-	particle_mat.scale_min = 0.8
-	particle_mat.scale_max = 2.0
+	particle_mat.scale_min = 2.0
+	particle_mat.scale_max = 4.0
 
 	# Color that fades out
 	var gradient = Gradient.new()
@@ -339,3 +349,33 @@ func calculate_centroid(points: Array[Vector2]) -> Vector2:
 	for point in points:
 		centroid += point
 	return centroid / points.size()
+
+
+func calculate_bounding_box_center(points: Array[Vector2]) -> Vector2:
+	"""Calculate the center of the bounding box for a set of points"""
+	var min_x = INF
+	var max_x = -INF
+	var min_y = INF
+	var max_y = -INF
+
+	for point in points:
+		min_x = min(min_x, point.x)
+		max_x = max(max_x, point.x)
+		min_y = min(min_y, point.y)
+		max_y = max(max_y, point.y)
+
+	return Vector2((min_x + max_x) / 2.0, (min_y + max_y) / 2.0)
+
+
+func show_drawing_feedback(success: bool) -> void:
+	"""Change line color to indicate success or failure, then clear"""
+	var feedback_color = success_color if success else failure_color
+	draw_line.default_color = Color(feedback_color.r, feedback_color.g, feedback_color.b, line_alpha)
+
+	# Clear the visual line after feedback duration
+	await get_tree().create_timer(feedback_duration).timeout
+	draw_line.clear_points()
+	current_points.clear()
+
+	# Reset color back to default
+	draw_line.default_color = Color(line_color.r, line_color.g, line_color.b, line_alpha)

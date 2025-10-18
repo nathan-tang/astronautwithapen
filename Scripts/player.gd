@@ -45,6 +45,9 @@ var ground_coyote_time: float = 0.0  ## Grace period for ground state to prevent
 # Jump state
 var jump_grace_timer: float = 0.0  ## Time remaining in jump grace period
 
+# External forces (like explosions)
+var external_velocity: Vector2 = Vector2.ZERO
+
 # For smooth rotation
 var target_rotation: float = 0.0
 
@@ -94,7 +97,11 @@ func _physics_process(delta: float) -> void:
 	if jump_grace_timer > 0:
 		jump_grace_timer -= delta
 
-	# 7. Apply gravity
+	# 7. Apply external forces (explosions, etc.)
+	velocity += external_velocity
+	external_velocity = external_velocity.lerp(Vector2.ZERO, 0.1)  # Decay external forces
+
+	# 8. Apply gravity
 	var gravity_to_apply = net_gravity
 	if jump_grace_timer > 0:
 		gravity_to_apply *= jump_grace_gravity_reduction
@@ -110,14 +117,14 @@ func _physics_process(delta: float) -> void:
 		# When airborne, apply full gravity
 		velocity += gravity_to_apply * delta
 
-	# 8. Clamp velocity to prevent extreme speeds
+	# 9. Clamp velocity to prevent extreme speeds
 	if velocity.length() > max_speed:
 		velocity = velocity.normalized() * max_speed
 
 	var vel_before_slide = velocity
 	move_and_slide()
 
-	# 9. Check if grounded (AFTER move_and_slide to use current collision data)
+	# 10. Check if grounded (AFTER move_and_slide to use current collision data)
 	var physically_grounded = check_ground()
 
 	# Use coyote time to prevent ground state flickering during fast movement
@@ -149,7 +156,11 @@ func _physics_process(delta: float) -> void:
 		else:
 			velocity = tangent_vel + (ground_normal * normal_vel_magnitude)
 
-	# 10. Update animations
+	# 11. Regenerate ink
+	if current_ink < max_ink:
+		restore_ink(1.0 * delta)
+
+	# 12. Update animations
 	update_animation()
 
 

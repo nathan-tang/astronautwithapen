@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://dr5hn3wk2qvjl"]
+[gd_scene load_steps=8 format=3 uid="uid://dr5hn3wk2qvjl"]
 
 [ext_resource type="PackedScene" path="res://Scenes/player_ui.tscn" id="1_21xkr"]
 [ext_resource type="PackedScene" uid="uid://b7kf8yqw2xn4v" path="res://Scenes/player.tscn" id="1_player"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://b1dol7yukh8pb" path="res://Scripts/camera_controller.gd" id="3_camera"]
 [ext_resource type="Texture2D" uid="uid://bbf7p4iy15uid" path="res://Assets/Sprites/planet05.png" id="4_jjvhh"]
 [ext_resource type="Script" uid="uid://c2ltq3cqd4ahg" path="res://Scripts/pen_drawing.gd" id="5_pen"]
+[ext_resource type="Script" uid="uid://3qxao6p3yh8e" path="res://Scripts/star_background.gd" id="7_stars"]
 
 [node name="Main" type="Node2D"]
 position = Vector2(-501, -2)
@@ -17,6 +18,33 @@ offset_top = -6770.0
 offset_right = 14242.0
 offset_bottom = 13230.0
 color = Color(0.05, 0.05, 0.2, 1)
+
+[node name="Stars3" type="Node2D" parent="."]
+z_index = -99
+script = ExtResource("7_stars")
+star_count = 300
+star_min_size = 3.0
+star_max_size = 5.0
+star_min_brightness = 0.5
+parallax_strength = 0.5
+
+[node name="Stars2" type="Node2D" parent="."]
+z_index = -99
+script = ExtResource("7_stars")
+star_count = 300
+star_min_size = 3.0
+star_max_size = 5.0
+star_min_brightness = 0.5
+parallax_strength = 0.2
+
+[node name="Stars" type="Node2D" parent="."]
+z_index = -99
+script = ExtResource("7_stars")
+star_count = 300
+star_min_size = 3.0
+star_max_size = 5.0
+star_min_brightness = 0.5
+parallax_strength = 0.4
 
 [node name="PlayerUI" parent="." instance=ExtResource("1_21xkr")]
 

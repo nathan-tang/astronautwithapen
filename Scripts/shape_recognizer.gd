@@ -11,14 +11,14 @@ enum ShapeType {
 }
 
 @export_group("Circle Detection")
-@export var circle_variance_threshold: float = 0.25  ## Max variance in radius (0-1, lower = stricter)
-@export var circle_closedness_threshold: float = 80.0  ## Max distance between start and end points
+@export var circle_variance_threshold: float = 0.2  ## Max variance in radius (0-1, lower = stricter)
+@export var circle_closedness_threshold: float = 75.0  ## Max distance between start and end points
 @export var circle_min_points: int = 10  ## Minimum points needed for circle detection
 
 @export_group("Triangle Detection")
 @export var triangle_angle_cluster_threshold: float = 30.0  ## Max angle within a cluster (degrees)
-@export var triangle_closedness_threshold: float = 80.0  ## Max distance between start and end points
-@export var triangle_min_points: int = 6  ## Minimum points needed for triangle detection
+@export var triangle_closedness_threshold: float = 75.0  ## Max distance between start and end points
+@export var triangle_min_points: int = 10  ## Minimum points needed for triangle detection
 
 
 ## Detect what shape the given points represent
