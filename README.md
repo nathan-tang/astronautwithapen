@@ -5,33 +5,39 @@ A 2D side-scrolling platformer built in Godot 4.5 featuring dynamic planetary gr
 ## Features
 
 ### Core Mechanics
-- **Dynamic Planetary Gravity**: Multiple planets with configurable gravity fields
-- **Smooth Player Rotation**: Character aligns with gravity direction
+- **Dynamic Planetary Gravity**: Multiple planets with configurable gravity fields that pull the player
+- **Smooth Player Rotation**: Character aligns with gravity direction for natural orientation
+- **Surface-Locked Movement**: When grounded, movement is constrained to be tangent to the planetary surface (no flying)
 - **Intelligent Camera**: Rotates with gravity to maintain orientation
+- **Stable Animations**: Walk/jump/idle animations with coyote time to prevent flickering
 - **Edge Case Handling**: Robust handling of multiple overlapping gravity sources
 
 ### Implemented Systems
 1. **Player Controller** (Scripts/player.gd)
-   - WASD movement relative to gravity
-   - Spacebar to jump perpendicular to surface
-   - Smooth rotation matching gravity direction
-   - Ground detection using raycasts
+   - Screen-relative WASD movement that adapts to camera rotation
+   - Movement projected onto surface tangent when grounded (stays glued to planets)
+   - Spacebar to jump perpendicular to surface with adaptive force based on gravity strength
+   - Ground detection using collision normals from move_and_slide()
+   - Ground stick force (5000) keeps player firmly on curved surfaces
+   - Jump grace period (0.5s) with reduced gravity for smooth jump arcs
+   - Coyote time (210ms) prevents animation flickering during fast movement
+   - Proper friction when standing still to prevent pole drift
 
 2. **Gravity System** (Scripts/planet.gd)
-   - Configurable gravity strength and radius
+   - Configurable gravity strength and radius per planet
    - Multiple falloff types (Linear, Quadratic, Inverse Square)
-   - Overlapping gravity field support
-   - Sticky gravity to prevent jittering
+   - Overlapping gravity field support with weighted averaging
+   - Sticky gravity to prevent jittering between equal sources
 
 3. **Camera Controller** (Scripts/camera_controller.gd)
    - Smooth position following
-   - Rotation aligned with gravity
+   - Rotation aligned with gravity for intuitive screen-relative controls
    - Optional dynamic zoom based on velocity
 
 ## Controls
 
-- **WASD** or **Arrow Keys**: Move left/right (relative to gravity)
-- **Spacebar**: Jump (perpendicular to current surface)
+- **WASD**: Move (screen-relative, automatically projects onto surface when grounded)
+- **Spacebar**: Jump (perpendicular to current surface, adaptive to gravity strength)
 
 ## Project Structure
 
@@ -84,13 +90,28 @@ The player calculates net gravity from all overlapping planet gravity fields:
 
 ### Player Parameters (player.gd)
 ```gdscript
-@export var move_speed: float = 200.0
-@export var jump_force: float = 400.0
-@export var default_gravity: float = 980.0
+@export var move_speed: float = 500.0  # Base movement speed
+@export var jump_force: float = 7000.0  # Base jump force
+@export var jump_gravity_multiplier: float = 4.0  # Jump scales with gravity
+@export var jump_grace_period: float = 0.5  # Reduced gravity after jump
+@export var jump_grace_gravity_reduction: float = 0.1  # 90% gravity reduction
+@export var air_control: float = 0.9  # Movement control while airborne
+@export var max_speed: float = 1000.0  # Maximum velocity cap
+@export var default_gravity: float = 400.0
 @export var rotation_speed: float = 5.0
 @export var gravity_cancel_threshold: float = 50.0
 @export var primary_planet_switch_threshold: float = 1.2  # 20% stronger
+@export var ground_detection_distance: float = 5.0
+@export var ground_stick_force: float = 5000.0  # Keeps player on curved surfaces
 ```
+
+**Important Implementation Details:**
+- Movement uses actual collision normals (not gravity direction) to prevent pole drift
+- When grounded, velocity is projected to be purely tangent to surface
+- Ground stick force is applied then immediately re-projected to prevent tangential drift
+- Friction applies strong dampening (0.3) to tangent velocity when standing still
+- Coyote time (210ms) maintains ground state briefly after losing contact
+- Animation only switches when target differs from current to prevent restarting
 
 ### Planet Parameters (planet.gd)
 ```gdscript
@@ -110,12 +131,11 @@ The player calculates net gravity from all overlapping planet gravity fields:
 
 ## Testing Scenarios
 
-The main.tscn scene includes a test level with 4 planets designed to test:
-
-1. **Planet 1** (Center, Large): Primary gravity source
-2. **Planet 2** (Left): Transition from main planet
-3. **Planet 3** (Right): Transition from main planet
-4. **Planet 4** (Top): Testing multiple overlapping fields
+The main.tscn scene includes a test level with 8 planets of varying sizes and colors arranged in a constellation. Features:
+- Dark space blue background (RGB: 0.05, 0.05, 0.2)
+- Planets with different gravity strengths (200-280) and radii (220-280)
+- Tests transitions between planets, orbital jumps, and overlapping gravity fields
+- Player starts at position (576, 200)
 
 ## Development
 
@@ -133,10 +153,13 @@ The main.tscn scene includes a test level with 4 planets designed to test:
    - Planet Radius (visual/collision size)
    - Falloff Type (gravity curve)
 
-### Debugging
-In debug builds, the player draws:
-- **Red line**: Current gravity direction
-- **Green/Yellow line**: Ground detection ray (green = grounded)
+### Debugging Tips
+Common issues and solutions:
+- **Animation flickering**: Adjust `ground_coyote_time` (currently 210ms) in player.gd
+- **Pole drift**: Ensure movement uses `ground_normal` (collision normal) not `gravity_direction`
+- **Flying off planets**: Check that movement is projected onto surface tangent when grounded
+- **Can't jump**: Ensure `jump_grace_timer` disables stick force during jump grace period
+- **Sliding on planets**: Increase friction dampening in the no-input else block (currently 0.3)
 
 ## Technical Notes
 
@@ -155,17 +178,24 @@ In debug builds, the player draws:
 - `lerp_angle()` for rotation (handles angle wrapping)
 - Configurable smoothing speeds for tweaking feel
 
-## Future Enhancements
+## Known Limitations & Future Enhancements
 
-Potential additions:
+### Current State
+- Player has idle, walk (2 frames), and jump animations
+- Movement speed: 500 base, 1000 max cap
+- 8 test planets in main scene with circular collision shapes
+- CharacterBody2D with safe_margin = 0.08 for reliable collision detection
+
+### Potential Additions
 - [ ] Visual effects for gravity fields
 - [ ] Sound effects for movement/jumping/landing
 - [ ] Different planet types (ice, lava, bouncy)
 - [ ] Collectibles and objectives
 - [ ] Level progression system
-- [ ] Custom player sprites and animations
+- [ ] More player sprite animations
 - [ ] Particle effects for thrust/movement
-- [ ] Background parallax scrolling
+- [ ] Background parallax scrolling with stars
+- [ ] Trail effects when jumping between planets
 
 ## Credits
 
