@@ -32,6 +32,8 @@ var current_primary_planet: Planet = null
 var last_stable_gravity: Vector2 = Vector2.DOWN
 var gravity_direction: Vector2 = Vector2.DOWN  ## Current gravity direction (unit vector)
 var is_grounded: bool = false
+var ground_normal: Vector2 = Vector2.UP  ## Actual surface normal from collision
+var ground_coyote_time: float = 0.0  ## Grace period for ground state to prevent flicker
 
 # Jump state
 var jump_grace_timer: float = 0.0  ## Time remaining in jump grace period
@@ -85,16 +87,21 @@ func _physics_process(delta: float) -> void:
 			gravity_to_apply *= jump_grace_gravity_reduction
 		velocity += gravity_to_apply * delta
 	else:
-		# When grounded, aggressively remove ANY velocity away from surface
-		var surface_normal = -gravity_direction
-		var velocity_away_from_surface = velocity.dot(surface_normal)
-		# Remove both inward AND outward velocity components
-		velocity -= surface_normal * velocity_away_from_surface
+		# When grounded, keep velocity purely tangent to surface
+		var surface_normal = ground_normal
 
-		# Apply strong downward force to keep player stuck to ground
-		# BUT skip this during jump grace period to allow jumps to escape orbit
+		# Project velocity to be tangent to surface (remove perpendicular component)
+		var velocity_perpendicular = velocity.dot(surface_normal)
+		velocity = velocity - (surface_normal * velocity_perpendicular)
+
+		# Apply stick force to maintain ground contact
+		# Only if not jumping and if we're not already moving into the surface
 		if jump_grace_timer <= 0:
-			velocity += gravity_direction * ground_stick_force * delta
+			# Push into surface with significant force
+			velocity -= surface_normal * ground_stick_force * delta
+			# Immediately re-project to ensure we're purely tangent (no drift)
+			velocity_perpendicular = velocity.dot(surface_normal)
+			velocity = velocity - (surface_normal * velocity_perpendicular)
 
 	# 8. Clamp velocity to prevent extreme speeds
 	if velocity.length() > max_speed:
@@ -103,7 +110,19 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	# 9. Check if grounded (AFTER move_and_slide to use current collision data)
-	is_grounded = check_ground()
+	var physically_grounded = check_ground()
+
+	# Use coyote time to prevent ground state flickering during fast movement
+	if physically_grounded:
+		is_grounded = true
+		ground_coyote_time = 0.21  # 210ms grace period
+	else:
+		# Still consider grounded briefly if we were recently on ground (coyote time)
+		if ground_coyote_time > 0:
+			ground_coyote_time -= delta
+			is_grounded = true
+		else:
+			is_grounded = false
 
 	# 10. Update animations
 	update_animation()
@@ -216,20 +235,27 @@ func handle_movement(delta: float) -> void:
 
 	# When grounded, project movement onto the surface tangent (parallel to ground)
 	if is_grounded:
-		# Get surface tangent (perpendicular to gravity)
-		var surface_tangent = Vector2(-gravity_direction.y, gravity_direction.x)
+		# Get surface tangent (perpendicular to actual ground normal, not gravity)
+		var surface_tangent = Vector2(-ground_normal.y, ground_normal.x)
 
 		# Project input onto tangent - this gives us the scalar component along the tangent
-		var tangent_amount = world_input.dot(surface_tangent)
+		var tangent_projection = world_input.dot(surface_tangent)
 
-		# Preserve input magnitude: when player pushes diagonally, they expect full speed
-		# So we scale by the original input length, not the projected length
+		# Only apply movement if there's actual input
 		var input_magnitude = world_input.length()
-		if abs(tangent_amount) > 0.01:  # Avoid division by zero
-			# Normalize the tangent component and scale by full input magnitude
-			var move_direction = surface_tangent * sign(tangent_amount) * input_magnitude * move_speed
+		if input_magnitude > 0.01:
+			# Use the actual tangent projection, not sign * magnitude
+			# This preserves the proper movement amount
+			var move_direction = surface_tangent * tangent_projection * move_speed
 			velocity.x = lerp(velocity.x, move_direction.x, 0.2)
 			velocity.y = lerp(velocity.y, move_direction.y, 0.2)
+		else:
+			# No input - apply strong friction to stop completely
+			# Use tangent velocity to stop drift along surface
+			var tangent_velocity = velocity.dot(surface_tangent)
+			# Dampen tangential movement heavily
+			tangent_velocity = lerp(tangent_velocity, 0.0, 0.3)
+			velocity = surface_tangent * tangent_velocity
 	else:
 		# In air, allow free movement with reduced control
 		var move_direction = world_input * move_speed * air_control
@@ -262,14 +288,27 @@ func handle_jump() -> void:
 
 ## Check if player is on the ground
 func check_ground() -> bool:
-	# Primary: Check slide collisions from move_and_slide
+	# Check slide collisions from move_and_slide
+	var best_ground_normal := Vector2.ZERO
+	var best_alignment := -1.0
+	var found_ground := false
+
 	if get_slide_collision_count() > 0:
 		for i in get_slide_collision_count():
 			var collision = get_slide_collision(i)
 			# Check if collision normal is roughly opposite to gravity direction
 			var collision_angle = collision.get_normal().dot(-gravity_direction)
-			if collision_angle > 0.5:  # Within ~60 degrees (more lenient)
-				return true
+			if collision_angle > 0.2:  # Within ~80 degrees (extremely lenient for curved surfaces)
+				# Store the actual ground normal for accurate tangent calculation
+				# Use the collision with the best alignment
+				if collision_angle > best_alignment:
+					best_ground_normal = collision.get_normal()
+					best_alignment = collision_angle
+				found_ground = true
+
+	if found_ground:
+		ground_normal = best_ground_normal
+		return true
 
 	return false
 
@@ -304,15 +343,12 @@ func update_animation() -> void:
 		if current_anim != "jump":
 			animated_sprite.play("jump")
 	else:
-		# On ground - base animation primarily on input state for stability
-		if current_anim == "walk":
-			# Currently walking - only stop if player releases input
-			if not is_moving:
-				animated_sprite.play("idle")
-		else:
-			# Currently idle or other state - check if should walk
-			if is_moving:
-				animated_sprite.play("walk")
-			elif current_anim != "idle":
-				# Not moving and not already idle - switch to idle
-				animated_sprite.play("idle")
+		# On ground - determine target animation based on input
+		var target_anim = "idle"
+		if is_moving:
+			target_anim = "walk"
+
+		# Only change animation if different from current
+		# This prevents restarting the same animation
+		if current_anim != target_anim:
+			animated_sprite.play(target_anim)
