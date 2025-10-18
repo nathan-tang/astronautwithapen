@@ -5,13 +5,13 @@ class_name Player
 ## Handles movement, jumping, rotation, and smooth transitions between gravity sources
 
 @export_group("Movement")
-@export var move_speed: float = 800.0
+@export var move_speed: float = 500.0
 @export var jump_force: float = 7000.0
 @export var jump_gravity_multiplier: float = 4.0  ## Jump force scales with gravity strength
 @export var jump_grace_period: float = 0.5  ## Seconds of reduced gravity after jump
 @export var jump_grace_gravity_reduction: float = 0.1  ## Gravity multiplier during grace period (0.1 = 90% reduction)
 @export var air_control: float = 0.9  ## Movement control while airborne (0-1)
-@export var max_speed: float = 3000.0  ## Maximum velocity cap
+@export var max_speed: float = 1000.0  ## Maximum velocity cap
 
 @export_group("Gravity")
 @export var default_gravity: float = 400.0
@@ -24,6 +24,7 @@ class_name Player
 
 @export_group("Ground Detection")
 @export var ground_detection_distance: float = 5.0
+@export var ground_stick_force: float = 5000.0  ## Downward force to keep player grounded
 
 # Internal state
 var active_gravity_fields: Array[Planet] = []
@@ -67,39 +68,44 @@ func _physics_process(delta: float) -> void:
 	# 3. Smooth rotation toward gravity direction
 	smooth_rotate_to_gravity(net_gravity, delta)
 
-	# 4. Check if grounded
-	is_grounded = check_ground()
-
-	# 5. Handle movement input
+	# 4. Handle movement input
 	handle_movement(delta)
 
-	# 6. Handle jump input
+	# 5. Handle jump input
 	handle_jump()
 
-	# 7. Update jump grace timer
+	# 6. Update jump grace timer
 	if jump_grace_timer > 0:
 		jump_grace_timer -= delta
 
-	# 8. Apply gravity (reduced during jump grace period, zero when grounded)
+	# 7. Apply gravity (reduced during jump grace period, reduced when grounded)
 	if not is_grounded:
 		var gravity_to_apply = net_gravity
 		if jump_grace_timer > 0:
 			gravity_to_apply *= jump_grace_gravity_reduction
 		velocity += gravity_to_apply * delta
 	else:
-		# When grounded, remove any velocity going into the surface
+		# When grounded, aggressively remove ANY velocity away from surface
 		var surface_normal = -gravity_direction
-		var velocity_into_surface = velocity.dot(surface_normal)
-		if velocity_into_surface < 0:
-			velocity -= surface_normal * velocity_into_surface
+		var velocity_away_from_surface = velocity.dot(surface_normal)
+		# Remove both inward AND outward velocity components
+		velocity -= surface_normal * velocity_away_from_surface
 
-	# 10. Clamp velocity to prevent extreme speeds
+		# Apply strong downward force to keep player stuck to ground
+		# BUT skip this during jump grace period to allow jumps to escape orbit
+		if jump_grace_timer <= 0:
+			velocity += gravity_direction * ground_stick_force * delta
+
+	# 8. Clamp velocity to prevent extreme speeds
 	if velocity.length() > max_speed:
 		velocity = velocity.normalized() * max_speed
 
 	move_and_slide()
 
-	# 11. Update animations
+	# 9. Check if grounded (AFTER move_and_slide to use current collision data)
+	is_grounded = check_ground()
+
+	# 10. Update animations
 	update_animation()
 
 
@@ -208,13 +214,27 @@ func handle_movement(delta: float) -> void:
 	var world_angle = input_angle + screen_to_world_rotation
 	var world_input = Vector2(cos(world_angle), sin(world_angle)) * input_vector.length()
 
-	# Apply movement control reduction when airborne
-	var control_factor = air_control if not is_grounded else 1.0
-	var move_direction = world_input * move_speed * control_factor
+	# When grounded, project movement onto the surface tangent (parallel to ground)
+	if is_grounded:
+		# Get surface tangent (perpendicular to gravity)
+		var surface_tangent = Vector2(-gravity_direction.y, gravity_direction.x)
 
-	# Apply movement
-	velocity.x = lerp(velocity.x, move_direction.x, 0.2)
-	velocity.y = lerp(velocity.y, move_direction.y, 0.2)
+		# Project input onto tangent - this gives us the scalar component along the tangent
+		var tangent_amount = world_input.dot(surface_tangent)
+
+		# Preserve input magnitude: when player pushes diagonally, they expect full speed
+		# So we scale by the original input length, not the projected length
+		var input_magnitude = world_input.length()
+		if abs(tangent_amount) > 0.01:  # Avoid division by zero
+			# Normalize the tangent component and scale by full input magnitude
+			var move_direction = surface_tangent * sign(tangent_amount) * input_magnitude * move_speed
+			velocity.x = lerp(velocity.x, move_direction.x, 0.2)
+			velocity.y = lerp(velocity.y, move_direction.y, 0.2)
+	else:
+		# In air, allow free movement with reduced control
+		var move_direction = world_input * move_speed * air_control
+		velocity.x = lerp(velocity.x, move_direction.x, 0.2)
+		velocity.y = lerp(velocity.y, move_direction.y, 0.2)
 
 	# Flip sprite horizontally based on movement direction
 	if animated_sprite and is_moving:
@@ -242,25 +262,16 @@ func handle_jump() -> void:
 
 ## Check if player is on the ground
 func check_ground() -> bool:
-	# Use built-in collision detection from move_and_slide
+	# Primary: Check slide collisions from move_and_slide
 	if get_slide_collision_count() > 0:
 		for i in get_slide_collision_count():
 			var collision = get_slide_collision(i)
 			# Check if collision normal is roughly opposite to gravity direction
 			var collision_angle = collision.get_normal().dot(-gravity_direction)
-			if collision_angle > 0.7:  # Within ~45 degrees
+			if collision_angle > 0.5:  # Within ~60 degrees (more lenient)
 				return true
 
-	# Fallback: raycast in gravity direction
-	var space_state = get_world_2d().direct_space_state
-	var query = PhysicsRayQueryParameters2D.create(
-		global_position,
-		global_position + gravity_direction * ground_detection_distance
-	)
-	query.exclude = [self]
-
-	var result = space_state.intersect_ray(query)
-	return result.size() > 0
+	return false
 
 
 ## Called by Planet when player enters gravity field
@@ -285,7 +296,6 @@ func update_animation() -> void:
 	if not animated_sprite:
 		return
 
-	var current_speed = velocity.length()
 	var current_anim = animated_sprite.animation
 
 	# Priority: Jump > Walk > Idle
@@ -294,12 +304,15 @@ func update_animation() -> void:
 		if current_anim != "jump":
 			animated_sprite.play("jump")
 	else:
-		# On ground - use hysteresis to prevent jittering
+		# On ground - base animation primarily on input state for stability
 		if current_anim == "walk":
-			# Currently walking - need to slow down significantly to stop
-			if current_speed < animation_velocity_threshold_idle:
+			# Currently walking - only stop if player releases input
+			if not is_moving:
 				animated_sprite.play("idle")
 		else:
-			# Currently idle - need to speed up significantly to start walking
-			if is_moving and current_speed > animation_velocity_threshold_walk:
+			# Currently idle or other state - check if should walk
+			if is_moving:
 				animated_sprite.play("walk")
+			elif current_anim != "idle":
+				# Not moving and not already idle - switch to idle
+				animated_sprite.play("idle")
