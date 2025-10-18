@@ -3,8 +3,8 @@ class_name MainMenu
 
 ## Main menu for the game with play and quit buttons
 
-@onready var play_button: Button = $MarginContainer/VBoxContainer/PlayButton
-@onready var quit_button: Button = $MarginContainer/VBoxContainer/QuitButton
+@onready var play_button: Button = $MarginContainer/VBoxContainer/ButtonContainer/PlayButton
+@onready var quit_button: Button = $MarginContainer/VBoxContainer/ButtonContainer/QuitButton
 
 
 func _ready() -> void:

@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://dr5hn3wk2qvjl"]
+[gd_scene load_steps=9 format=3 uid="uid://dr5hn3wk2qvjl"]
 
 [ext_resource type="PackedScene" path="res://Scenes/player_ui.tscn" id="1_21xkr"]
 [ext_resource type="PackedScene" uid="uid://b7kf8yqw2xn4v" path="res://Scenes/player.tscn" id="1_player"]
@@ -7,9 +7,16 @@
 [ext_resource type="Texture2D" uid="uid://bbf7p4iy15uid" path="res://Assets/Sprites/planet05.png" id="4_jjvhh"]
 [ext_resource type="Script" uid="uid://c2ltq3cqd4ahg" path="res://Scripts/pen_drawing.gd" id="5_pen"]
 [ext_resource type="Script" uid="uid://3qxao6p3yh8e" path="res://Scripts/star_background.gd" id="7_stars"]
+[ext_resource type="AudioStream" path="res://Assets/space.wav" id="8_music"]
 
 [node name="Main" type="Node2D"]
 position = Vector2(-501, -2)
+
+[node name="MusicPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("8_music")
+volume_db = -15.0
+autoplay = true
+bus = &"Master"
 
 [node name="Background" type="ColorRect" parent="."]
 z_index = -100

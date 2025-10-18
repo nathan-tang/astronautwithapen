@@ -20,6 +20,10 @@ class_name StarBackground
 @export var enable_parallax: bool = true
 @export var parallax_strength: float = 0.3  ## How much stars move relative to camera (0-1, lower = further away)
 
+@export_group("Drift Settings")
+@export var enable_drift: bool = false  ## Make stars drift slowly (for menu screens)
+@export var drift_speed: float = 20.0  ## Speed of star drift
+
 var stars: Array[Dictionary] = []
 var camera: Camera2D = null
 
@@ -34,10 +38,18 @@ func _ready() -> void:
 			push_warning("StarBackground: No camera found for parallax effect")
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if enable_parallax and camera:
 		# Update position based on camera with parallax offset
 		global_position = camera.global_position * (1.0 - parallax_strength)
+		queue_redraw()
+	elif enable_drift:
+		# Drift stars slowly for menu screens
+		for star in stars:
+			star.position.x += drift_speed * delta
+			# Wrap around when star goes off screen
+			if star.position.x > area_width/2 + center_offset.x:
+				star.position.x = -area_width/2 + center_offset.x
 		queue_redraw()
 
 
