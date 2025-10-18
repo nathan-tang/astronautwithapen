@@ -74,6 +74,9 @@ var target_rotation: float = 0.0
 
 
 func _ready() -> void:
+	# Add to enemies group for homing bullets
+	add_to_group("enemies")
+
 	# Create gravity component
 	gravity_component = GravityEntity.new()
 	add_child(gravity_component)
@@ -363,13 +366,13 @@ func _flash_red() -> void:
 	if not animated_sprite:
 		return
 
-	var original_modulate = animated_sprite.modulate
+	# Always restore to white, not the current modulate (which might be red)
 	animated_sprite.modulate = Color.RED
 	await get_tree().create_timer(0.1).timeout
 
 	# Only restore if still valid and not dead
 	if is_instance_valid(self) and is_instance_valid(animated_sprite) and not is_dead:
-		animated_sprite.modulate = original_modulate
+		animated_sprite.modulate = Color.WHITE
 
 
 func die() -> void:

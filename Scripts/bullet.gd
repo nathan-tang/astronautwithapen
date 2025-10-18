@@ -8,9 +8,16 @@ signal hit_target(body: Node2D, position: Vector2)
 
 @export_group("Bullet Settings")
 @export var bullet_speed: float = 800.0
+@export var acceleration: float = 1200.0  ## How fast bullet accelerates to max speed
 @export var lifetime: float = 5.0  ## Auto-destroy after this many seconds
 @export var damage: float = 10.0
 @export var pierce_count: int = 0  ## How many targets it can pierce through (0 = destroy on first hit)
+
+@export_group("Homing Settings")
+@export var homing_enabled: bool = true  ## Enable homing behavior
+@export var homing_strength: float = 3.0  ## How aggressively bullet turns (0-10, higher = sharper turns)
+@export var homing_range: float = 800.0  ## Max distance to detect targets (0 = infinite)
+@export var homing_delay: float = 0.0  ## Delay before homing activates (seconds)
 
 @export_group("Explosion Settings")
 @export var explosion_radius: float = 100.0
@@ -21,6 +28,11 @@ signal hit_target(body: Node2D, position: Vector2)
 var time_alive: float = 0.0
 var hits_remaining: int = 0
 var direction: Vector2 = Vector2.RIGHT
+var current_speed: float = 0.0  ## Current speed (accelerates from 0 to bullet_speed)
+
+# Homing state
+var current_target: Node2D = null
+var homing_active: bool = false
 
 # Visual components
 @onready var sprite: Sprite2D = $Sprite2D
@@ -37,6 +49,10 @@ func _ready() -> void:
 	lock_rotation = true  # Don't rotate from physics, only from code
 	freeze_mode = RigidBody2D.FREEZE_MODE_KINEMATIC  # Don't freeze when off-screen
 
+	# Enable contact monitoring for collision detection
+	contact_monitor = true
+	max_contacts_reported = 4
+
 	# Initialize pierce counter
 	hits_remaining = pierce_count + 1  # +1 for initial hit
 
@@ -48,6 +64,17 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	# Accelerate to max speed
+	if current_speed < bullet_speed:
+		current_speed = min(current_speed + acceleration * delta, bullet_speed)
+
+	# Apply homing behavior
+	if homing_enabled and homing_active:
+		apply_homing(delta)
+	else:
+		# If not homing, just accelerate in the initial direction
+		linear_velocity = direction * current_speed
+
 	# Rotate sprite to match velocity direction
 	if linear_velocity.length() > 0:
 		rotation = linear_velocity.angle()
@@ -57,23 +84,93 @@ func _process(delta: float) -> void:
 	# Track lifetime
 	time_alive += delta
 
+	# Activate homing after delay
+	if homing_enabled and not homing_active and time_alive >= homing_delay:
+		homing_active = true
+
 	# Destroy after lifetime expires
 	if time_alive >= lifetime:
 		queue_free()
+
+
+func apply_homing(delta: float) -> void:
+	"""Smoothly steer bullet toward nearest slime enemy"""
+	# Update target if current target is invalid
+	if not is_instance_valid(current_target) or (current_target is SlimeEnemy and current_target.is_dead):
+		current_target = find_nearest_slime()
+
+	# If no valid target, continue straight
+	if not current_target:
+		return
+
+	# Check if target is within range
+	var distance_to_target = global_position.distance_to(current_target.global_position)
+	if homing_range > 0 and distance_to_target > homing_range:
+		current_target = null
+		return
+
+	# Calculate direction to target
+	var direction_to_target = (current_target.global_position - global_position).normalized()
+
+	# Get current velocity direction
+	var current_direction = linear_velocity.normalized()
+
+	# Smoothly interpolate between current direction and target direction
+	var new_direction = current_direction.lerp(direction_to_target, homing_strength * delta)
+
+	# Update velocity with new direction using current_speed (which accelerates)
+	linear_velocity = new_direction.normalized() * current_speed
+
+
+func find_nearest_slime() -> Node2D:
+	"""Find the nearest SlimeEnemy in the scene"""
+	var nearest_slime: Node2D = null
+	var nearest_distance: float = INF
+
+	# Get all nodes in the "enemies" group (you may need to add slimes to this group)
+	# Or search for all SlimeEnemy instances
+	var slimes = get_tree().get_nodes_in_group("enemies")
+
+	# Fallback: search all nodes for SlimeEnemy type if group is empty
+	if slimes.is_empty():
+		slimes = []
+		# Get all children of the root recursively and filter for SlimeEnemy
+		var all_nodes = get_tree().root.get_children()
+		for node in all_nodes:
+			_collect_slimes(node, slimes)
+
+	for slime in slimes:
+		if slime is SlimeEnemy and not slime.is_dead:
+			var distance = global_position.distance_to(slime.global_position)
+
+			# Check range limit
+			if homing_range > 0 and distance > homing_range:
+				continue
+
+			if distance < nearest_distance:
+				nearest_distance = distance
+				nearest_slime = slime
+
+	return nearest_slime
+
+
+func _collect_slimes(node: Node, slimes_array: Array) -> void:
+	"""Recursively collect all SlimeEnemy nodes"""
+	if node is SlimeEnemy:
+		slimes_array.append(node)
+
+	for child in node.get_children():
+		_collect_slimes(child, slimes_array)
 
 
 func _on_body_entered(body: Node) -> void:
 	# Emit hit signal
 	hit_target.emit(body, global_position)
 
-	# Decrement hits remaining
-	hits_remaining -= 1
-
-	# Destroy if no hits remaining
-	if hits_remaining <= 0:
-		create_impact_effect()
-		apply_explosion_force()
-		queue_free()
+	# Always destroy on contact with anything (planet, enemy, etc.)
+	create_impact_effect()
+	apply_explosion_force()
+	queue_free()
 
 
 func setup_trail_particles() -> void:
@@ -195,7 +292,8 @@ func initialize(spawn_position: Vector2, fire_direction: Vector2) -> void:
 	"""Initialize bullet with position and direction"""
 	global_position = spawn_position
 	direction = fire_direction.normalized()
-	linear_velocity = direction * bullet_speed
+	current_speed = 0.0  # Start at zero speed
+	linear_velocity = Vector2.ZERO  # Start with no velocity
 	rotation = direction.angle()
 
-	print("Bullet initialized at ", spawn_position, " with velocity ", linear_velocity)
+	print("Bullet initialized at ", spawn_position, " - will accelerate to ", bullet_speed)
