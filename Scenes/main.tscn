@@ -1,0 +1,94 @@
+[gd_scene load_steps=5 format=3 uid="uid://dr5hn3wk2qvjl"]
+
+[ext_resource type="PackedScene" uid="uid://b7kf8yqw2xn4v" path="res://Scenes/player.tscn" id="1_player"]
+[ext_resource type="PackedScene" uid="uid://cgj3yl4qkixk1" path="res://Scenes/planet.tscn" id="2_planet"]
+[ext_resource type="Script" uid="uid://b1dol7yukh8pb" path="res://Scripts/camera_controller.gd" id="3_camera"]
+[ext_resource type="Texture2D" uid="uid://bbf7p4iy15uid" path="res://Assets/Sprites/planet05.png" id="4_jjvhh"]
+
+[node name="Main" type="Node2D"]
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+position = Vector2(576, 200)
+
+[node name="Camera2D" type="Camera2D" parent="Player"]
+script = ExtResource("3_camera")
+
+[node name="Planets" type="Node2D" parent="."]
+
+[node name="Planet2" parent="Planets" instance=ExtResource("2_planet")]
+position = Vector2(-500, 700)
+gravity_strength = 250.0
+gravity_radius = 1600.0
+planet_radius = 280.0
+
+[node name="Sprite2D" parent="Planets/Planet2" index="0"]
+modulate = Color(0.3, 0.6, 0.8, 1)
+texture = ExtResource("4_jjvhh")
+
+[node name="Planet3" parent="Planets" instance=ExtResource("2_planet")]
+position = Vector2(1200, 700)
+gravity_strength = 250.0
+gravity_radius = 1600.0
+planet_radius = 280.0
+
+[node name="Sprite2D" parent="Planets/Planet3" index="0"]
+modulate = Color(0.6, 0.3, 0.7, 1)
+texture = ExtResource("4_jjvhh")
+
+[node name="Planet4" parent="Planets" instance=ExtResource("2_planet")]
+position = Vector2(350, -600)
+gravity_strength = 200.0
+gravity_radius = 1400.0
+planet_radius = 240.0
+
+[node name="Sprite2D" parent="Planets/Planet4" index="0"]
+modulate = Color(0.9, 0.7, 0.2, 1)
+texture = ExtResource("4_jjvhh")
+
+[node name="Planet5" parent="Planets" instance=ExtResource("2_planet")]
+position = Vector2(-700, -300)
+gravity_strength = 280.0
+gravity_radius = 1500.0
+planet_radius = 260.0
+
+[node name="Sprite2D" parent="Planets/Planet5" index="0"]
+modulate = Color(0.7, 0.2, 0.5, 1)
+texture = ExtResource("4_jjvhh")
+
+[node name="Planet6" parent="Planets" instance=ExtResource("2_planet")]
+position = Vector2(1400, -300)
+gravity_strength = 280.0
+gravity_radius = 1500.0
+planet_radius = 260.0
+
+[node name="Sprite2D" parent="Planets/Planet6" index="0"]
+modulate = Color(0.5, 0.8, 0.3, 1)
+texture = ExtResource("4_jjvhh")
+
+[node name="Planet7" parent="Planets" instance=ExtResource("2_planet")]
+position = Vector2(-200, 1500)
+gravity_strength = 220.0
+gravity_radius = 1300.0
+planet_radius = 220.0
+
+[node name="Sprite2D" parent="Planets/Planet7" index="0"]
+modulate = Color(0.9, 0.3, 0.3, 1)
+texture = ExtResource("4_jjvhh")
+
+[node name="Planet8" parent="Planets" instance=ExtResource("2_planet")]
+position = Vector2(900, 1500)
+gravity_strength = 220.0
+gravity_radius = 1300.0
+planet_radius = 220.0
+
+[node name="Sprite2D" parent="Planets/Planet8" index="0"]
+modulate = Color(0.3, 0.9, 0.9, 1)
+texture = ExtResource("4_jjvhh")
+
+[editable path="Planets/Planet2"]
+[editable path="Planets/Planet3"]
+[editable path="Planets/Planet4"]
+[editable path="Planets/Planet5"]
+[editable path="Planets/Planet6"]
+[editable path="Planets/Planet7"]
+[editable path="Planets/Planet8"]
