@@ -12,10 +12,10 @@ collision_mask = 7
 script = ExtResource("1_bomb")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
+scale = Vector2(5, 5)
 texture = ExtResource("2_sprite")
 region_enabled = true
 region_rect = Rect2(159.61511, 127.583725, 16.715515, 17.256302)
-scale = Vector2(5, 5)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_1")

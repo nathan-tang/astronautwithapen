@@ -10,9 +10,18 @@ class_name Planet
 
 @export_group("Visual Settings")
 @export var planet_radius: float = 64.0  ## Visual/collision radius
+@export var randomize_size: bool = true  ## Randomize planet size on spawn
+@export var size_min: float = 200.0  ## Minimum planet radius
+@export var size_max: float = 350.0  ## Maximum planet radius
+@export var randomize_color: bool = true  ## Randomize planet color on spawn
 
 @export_group("Health Settings")
 @export var max_health: float = 250.0  ## Can sustain 25 attacks at 10 damage each
+
+@export_group("Meander Settings")
+@export var enable_meander: bool = true  ## Enable wandering movement
+@export var meander_distance_percent: float = 0.5  ## Max distance as percentage of radius
+@export var meander_speed: float = 10.0  ## Speed of meandering movement
 
 # State
 var current_health: float = 250.0
@@ -28,14 +37,30 @@ signal planet_destroyed(planet: Planet)
 var flash_timer: float = 0.0
 var original_modulate: Color
 
+# Meander state
+var starting_position: Vector2 = Vector2.ZERO
+var meander_target: Vector2 = Vector2.ZERO
+var meander_timer: float = 0.0
+var meander_change_interval: float = 3.0  ## How often to pick new target
+
 
 func _ready() -> void:
+	# Randomize size if enabled
+	if randomize_size:
+		planet_radius = randf_range(size_min, size_max)
+
 	# Initialize health
 	current_health = max_health
 
-	# Store original color
+	# Randomize and store color
 	if sprite:
+		if randomize_color:
+			sprite.modulate = _generate_random_planet_color()
 		original_modulate = sprite.modulate
+
+	# Store starting position for meandering
+	starting_position = global_position
+	_pick_new_meander_target()
 
 	# Set up collision shapes based on radius values
 	_setup_shapes()
@@ -50,6 +75,10 @@ func _process(delta: float) -> void:
 		flash_timer -= delta
 		if flash_timer <= 0 and sprite:
 			sprite.modulate = original_modulate
+
+	# Handle meandering movement
+	if enable_meander:
+		update_meander(delta)
 
 
 func _setup_shapes() -> void:
@@ -115,3 +144,47 @@ func take_damage(amount: float) -> void:
 		print("Planet destroyed! Emitting signal...")
 		planet_destroyed.emit(self)
 		queue_free()
+
+
+func update_meander(delta: float) -> void:
+	"""Update planet's meandering movement"""
+	# Update timer
+	meander_timer -= delta
+	if meander_timer <= 0:
+		_pick_new_meander_target()
+		meander_timer = meander_change_interval
+
+	# Move towards target
+	var direction = (meander_target - global_position).normalized()
+	var distance = global_position.distance_to(meander_target)
+
+	# Slow down as we approach target
+	var speed_factor = min(distance / 10.0, 1.0)
+	global_position += direction * meander_speed * speed_factor * delta
+
+
+func _pick_new_meander_target() -> void:
+	"""Pick a new random position within meander distance"""
+	var max_offset = planet_radius * meander_distance_percent
+	var random_offset = Vector2(
+		randf_range(-max_offset, max_offset),
+		randf_range(-max_offset, max_offset)
+	)
+	meander_target = starting_position + random_offset
+
+
+func _generate_random_planet_color() -> Color:
+	"""Generate a random pleasant planet color"""
+	var color_options = [
+		Color(0.8, 0.6, 0.3),   # Orange/tan
+		Color(0.3, 0.6, 0.8),   # Blue
+		Color(0.6, 0.3, 0.7),   # Purple
+		Color(0.9, 0.7, 0.2),   # Yellow
+		Color(0.7, 0.2, 0.5),   # Pink
+		Color(0.5, 0.8, 0.3),   # Green
+		Color(0.9, 0.3, 0.3),   # Red
+		Color(0.3, 0.9, 0.9),   # Cyan
+		Color(0.8, 0.5, 0.6),   # Rose
+		Color(0.4, 0.7, 0.5),   # Teal
+	]
+	return color_options[randi() % color_options.size()]

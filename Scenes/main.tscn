@@ -4,11 +4,10 @@
 [ext_resource type="PackedScene" uid="uid://b7kf8yqw2xn4v" path="res://Scenes/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" uid="uid://cgj3yl4qkixk1" path="res://Scenes/planet.tscn" id="2_planet"]
 [ext_resource type="Script" uid="uid://b1dol7yukh8pb" path="res://Scripts/camera_controller.gd" id="3_camera"]
-[ext_resource type="Texture2D" uid="uid://bbf7p4iy15uid" path="res://Assets/Sprites/planet05.png" id="4_jjvhh"]
-[ext_resource type="Script" path="res://Scripts/pen_drawing.gd" id="5_pen"]
-[ext_resource type="Script" uid="uid://bepp0c3qpdy3s" path="res://Scripts/enemy_spawner_debug.gd" id="6_spawner"]
+[ext_resource type="Script" uid="uid://c2ltq3cqd4ahg" path="res://Scripts/pen_drawing.gd" id="5_pen"]
+[ext_resource type="Script" path="res://Scripts/enemy_spawner_debug.gd" id="6_spawner"]
 [ext_resource type="Script" uid="uid://3qxao6p3yh8e" path="res://Scripts/star_background.gd" id="7_stars"]
-[ext_resource type="AudioStream" path="res://Assets/space.wav" id="8_music"]
+[ext_resource type="AudioStream" uid="uid://bgw335j5cs4n4" path="res://Assets/space.wav" id="8_music"]
 [ext_resource type="Script" path="res://Scripts/ufo_spawner.gd" id="9_ufo_spawner"]
 [ext_resource type="Script" path="res://Scripts/game_manager.gd" id="10_game_manager"]
 [ext_resource type="PackedScene" path="res://Scenes/game_over_ui.tscn" id="11_game_over"]
@@ -20,7 +19,6 @@ position = Vector2(-501, -2)
 stream = ExtResource("8_music")
 volume_db = -15.0
 autoplay = true
-bus = &"Master"
 
 [node name="Background" type="ColorRect" parent="."]
 z_index = -100
@@ -85,67 +83,60 @@ script = ExtResource("9_ufo_spawner")
 [node name="Planets" type="Node2D" parent="."]
 
 [node name="Planet2" parent="Planets" instance=ExtResource("2_planet")]
-position = Vector2(-500, 700)
+position = Vector2(210, 451)
 gravity_strength = 250.0
 planet_radius = 280.0
 
 [node name="Sprite2D" parent="Planets/Planet2" index="0"]
 modulate = Color(0.3, 0.6, 0.8, 1)
-texture = ExtResource("4_jjvhh")
 
 [node name="Planet3" parent="Planets" instance=ExtResource("2_planet")]
-position = Vector2(1200, 700)
+position = Vector2(-961, 899)
 gravity_strength = 250.0
 planet_radius = 280.0
 
 [node name="Sprite2D" parent="Planets/Planet3" index="0"]
 modulate = Color(0.6, 0.3, 0.7, 1)
-texture = ExtResource("4_jjvhh")
 
 [node name="Planet4" parent="Planets" instance=ExtResource("2_planet")]
-position = Vector2(350, -600)
+position = Vector2(485, -664)
 gravity_strength = 200.0
 planet_radius = 240.0
 
 [node name="Sprite2D" parent="Planets/Planet4" index="0"]
 modulate = Color(0.9, 0.7, 0.2, 1)
-texture = ExtResource("4_jjvhh")
 
 [node name="Planet5" parent="Planets" instance=ExtResource("2_planet")]
-position = Vector2(-700, -300)
+position = Vector2(-747, -320)
 gravity_strength = 280.0
 planet_radius = 260.0
 
 [node name="Sprite2D" parent="Planets/Planet5" index="0"]
 modulate = Color(0.7, 0.2, 0.5, 1)
-texture = ExtResource("4_jjvhh")
 
 [node name="Planet6" parent="Planets" instance=ExtResource("2_planet")]
-position = Vector2(1400, -300)
+position = Vector2(1447, 212)
 gravity_strength = 280.0
 planet_radius = 260.0
 
 [node name="Sprite2D" parent="Planets/Planet6" index="0"]
 modulate = Color(0.5, 0.8, 0.3, 1)
-texture = ExtResource("4_jjvhh")
 
 [node name="Planet7" parent="Planets" instance=ExtResource("2_planet")]
-position = Vector2(-200, 1500)
+position = Vector2(63, 1728)
 gravity_strength = 220.0
 planet_radius = 220.0
 
 [node name="Sprite2D" parent="Planets/Planet7" index="0"]
 modulate = Color(0.9, 0.3, 0.3, 1)
-texture = ExtResource("4_jjvhh")
 
 [node name="Planet8" parent="Planets" instance=ExtResource("2_planet")]
-position = Vector2(900, 1500)
+position = Vector2(1207, 1389)
 gravity_strength = 220.0
 planet_radius = 220.0
 
 [node name="Sprite2D" parent="Planets/Planet8" index="0"]
 modulate = Color(0.3, 0.9, 0.9, 1)
-texture = ExtResource("4_jjvhh")
 
 [editable path="Planets/Planet2"]
 [editable path="Planets/Planet3"]

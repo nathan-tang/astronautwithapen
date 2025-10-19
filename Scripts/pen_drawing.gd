@@ -40,6 +40,8 @@ signal shape_recognized(shape_type: ShapeRecognizer.ShapeType, points: Array[Vec
 @export_group("Projectile Spawning")
 @export var spawn_projectiles: bool = true
 @export var bullet_spawn_offset: float = 50.0  ## Distance from mouse to spawn bullet
+@export var max_spawn_range: float = 1000.0  ## Maximum distance from player to spawn projectiles
+@export var show_range_indicator: bool = true  ## Show visual range circle
 
 # Drawing state
 var is_drawing: bool = false
@@ -49,6 +51,7 @@ var last_point: Vector2 = Vector2.ZERO
 # Visual components
 var draw_line: Line2D = null
 var particle_system: GPUParticles2D = null
+var range_indicator: Node2D = null
 
 # Shape recognition
 var shape_recognizer: ShapeRecognizer = null
@@ -80,6 +83,30 @@ func _ready() -> void:
 	if enable_shape_recognition:
 		shape_recognizer = ShapeRecognizer.new()
 		add_child(shape_recognizer)
+
+	# Create range indicator
+	if show_range_indicator:
+		range_indicator = Node2D.new()
+		range_indicator.z_index = -1
+		range_indicator.draw.connect(_draw_range_indicator)
+		add_child(range_indicator)
+
+
+func _process(_delta: float) -> void:
+	# Update range indicator position to follow player
+	if show_range_indicator and range_indicator and player:
+		range_indicator.global_position = player.global_position
+		range_indicator.queue_redraw()
+
+
+func _draw_range_indicator() -> void:
+	"""Draw the spawn range circle around the player"""
+	if not range_indicator:
+		return
+
+	# Draw a transparent white circle at the origin (indicator is positioned at player)
+	var circle_color = Color(1.0, 1.0, 1.0, 0.1)
+	range_indicator.draw_circle(Vector2.ZERO, max_spawn_range, circle_color)
 
 
 func _input(event: InputEvent) -> void:
@@ -224,15 +251,23 @@ func spawn_projectile_for_shape(shape_type: ShapeRecognizer.ShapeType, points: A
 
 func spawn_bomb(points: Array[Vector2]) -> void:
 	"""Spawn a bomb at the center of the drawn circle"""
+	# Calculate bounding box center (better for circles with overlap)
+	var center = calculate_bounding_box_center(points)
+	var global_center = to_global(center)
+
+	# Check if spawn position is within range
+	if player != null:
+		var distance_from_player = player.global_position.distance_to(global_center)
+		if distance_from_player > max_spawn_range:
+			print("Too far from player to spawn bomb! Distance: ", distance_from_player)
+			show_drawing_feedback(false)
+			return
+
 	# Check if player has enough ink
 	if player == null or not player.use_ink(bomb_ink_cost):
 		print("Not enough ink to spawn bomb! Need ", bomb_ink_cost)
 		show_drawing_feedback(false)
 		return
-
-	# Calculate bounding box center (better for circles with overlap)
-	var center = calculate_bounding_box_center(points)
-	var global_center = to_global(center)
 
 	# Spawn red particles for bomb creation
 	spawn_shape_particles(global_center, Color.RED)
@@ -256,24 +291,30 @@ func spawn_bullet(points: Array[Vector2]) -> void:
 	if points.size() < 3:
 		return
 
+	# Calculate centroid
+	var centroid = calculate_centroid(points)
+	var global_centroid = to_global(centroid)
+
+	# Check if spawn position is within range
+	if player != null:
+		var distance_from_player = player.global_position.distance_to(global_centroid)
+		if distance_from_player > max_spawn_range:
+			print("Too far from player to spawn bullet! Distance: ", distance_from_player)
+			show_drawing_feedback(false)
+			return
+
 	# Check if player has enough ink
 	if player == null or not player.use_ink(bullet_ink_cost):
 		print("Not enough ink to spawn bullet! Need ", bullet_ink_cost)
 		show_drawing_feedback(false)
 		return
 
-	# Calculate centroid
-	var centroid = calculate_centroid(points)
-
 	# Calculate direction from centroid to where drawing started
 	var start_point = points[0]
 	var path_direction = (start_point - centroid).normalized()
 
-	# Spawn position at centroid
-	var spawn_pos = centroid
-
-	# Convert to global coordinates
-	var global_spawn_pos = to_global(spawn_pos)
+	# Use the global_centroid we already calculated
+	var global_spawn_pos = global_centroid
 
 	# Spawn blue particles for bullet creation
 	spawn_shape_particles(global_spawn_pos, Color.BLUE)

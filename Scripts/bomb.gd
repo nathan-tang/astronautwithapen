@@ -9,9 +9,9 @@ signal exploded(position: Vector2)
 @export_group("Bomb Settings")
 @export var fuse_time: float = 3.0  ## Time before auto-detonation
 @export var explosion_radius: float = 150.0
-@export var explosion_force: float = 5000.0
+@export var explosion_force: float = 1000.0
 @export var explosion_damage: float = 25.0  ## Damage dealt to enemies in explosion radius
-@export var player_explosion_multiplier: float = 50.0  ## Extra force multiplier for player
+@export var player_explosion_multiplier: float = 4.0  ## Extra force multiplier for player
 @export var explode_on_impact: bool = false  ## Explode immediately on collision
 
 # State
