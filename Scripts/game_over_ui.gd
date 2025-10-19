@@ -52,6 +52,20 @@ func _on_game_over(final_score: int) -> void:
 
 func _on_play_again_pressed() -> void:
 	"""Restart the current scene"""
+	print("GameOverUI: Restarting game...")
+
+	# Clean up all enemies and projectiles added to scene root
+	var root = get_tree().root
+	var cleanup_count = 0
+
+	for child in root.get_children():
+		# Remove enemies, bullets, and bombs that were added to root
+		if child is SlimeEnemy or child is UfoEnemy or child is Bullet or child is Bomb:
+			child.queue_free()
+			cleanup_count += 1
+
+	print("GameOverUI: Cleaned up ", cleanup_count, " objects")
+
 	get_tree().paused = false
 	get_tree().reload_current_scene()
 
