@@ -1,0 +1,37 @@
+[gd_scene load_steps=5 format=3 uid="uid://c8kak2m3n4qvl"]
+
+[ext_resource type="Script" uid="uid://llprgqrdc0kb" path="res://Scripts/ufo_enemy.gd" id="1_ufo"]
+[ext_resource type="Texture2D" uid="uid://chef4qg7h381t" path="res://Assets/Sprites/shipBeige_manned.png" id="2_ufo_sprite"]
+[ext_resource type="Texture2D" uid="uid://bv8ufyn4nyxb6" path="res://Assets/Sprites/laserYellow2.png" id="3_beam_sprite"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_ufo"]
+radius = 20.0
+
+[node name="UfoEnemy" type="RigidBody2D"]
+collision_layer = 4
+collision_mask = 7
+mass = 0.5
+lock_rotation = true
+contact_monitor = true
+max_contacts_reported = 4
+script = ExtResource("1_ufo")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_ufo_sprite")
+
+[node name="BeamSprite" type="Sprite2D" parent="."]
+z_index = -50
+position = Vector2(0, 100)
+scale = Vector2(1.5, 3)
+texture = ExtResource("3_beam_sprite")
+offset = Vector2(0, 30)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_ufo")
+
+[node name="HitboxArea" type="Area2D" parent="."]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HitboxArea"]
+shape = SubResource("CircleShape2D_ufo")

@@ -102,10 +102,17 @@ func _process(delta: float) -> void:
 
 
 func apply_homing(delta: float) -> void:
-	"""Smoothly steer bullet toward nearest slime enemy"""
-	# Update target if current target is invalid
-	if not is_instance_valid(current_target) or (current_target is SlimeEnemy and current_target.is_dead):
-		current_target = find_nearest_slime()
+	"""Smoothly steer bullet toward nearest enemy"""
+	# Update target if current target is invalid or dead
+	var target_is_dead = false
+	if is_instance_valid(current_target):
+		if current_target is SlimeEnemy and current_target.is_dead:
+			target_is_dead = true
+		elif current_target is UfoEnemy and current_target.is_dead:
+			target_is_dead = true
+
+	if not is_instance_valid(current_target) or target_is_dead:
+		current_target = find_nearest_enemy()
 
 	# If no valid target, continue straight in initial direction
 	if not current_target:
@@ -131,26 +138,35 @@ func apply_homing(delta: float) -> void:
 	linear_velocity = new_direction.normalized() * current_speed
 
 
-func find_nearest_slime() -> Node2D:
-	"""Find the nearest SlimeEnemy in the scene"""
-	var nearest_slime: Node2D = null
+func find_nearest_enemy() -> Node2D:
+	"""Find the nearest enemy (SlimeEnemy or UfoEnemy) in the scene"""
+	var nearest_enemy: Node2D = null
 	var nearest_distance: float = INF
 
-	# Get all nodes in the "enemies" group (you may need to add slimes to this group)
-	# Or search for all SlimeEnemy instances
-	var slimes = get_tree().get_nodes_in_group("enemies")
+	# Get all nodes in the "enemies" group (SlimeEnemy and UfoEnemy both add themselves to this group)
+	var enemies = get_tree().get_nodes_in_group("enemies")
 
-	# Fallback: search all nodes for SlimeEnemy type if group is empty
-	if slimes.is_empty():
-		slimes = []
-		# Get all children of the root recursively and filter for SlimeEnemy
+	# Fallback: search all nodes for enemy types if group is empty
+	if enemies.is_empty():
+		enemies = []
 		var all_nodes = get_tree().root.get_children()
 		for node in all_nodes:
-			_collect_slimes(node, slimes)
+			_collect_enemies(node, enemies)
 
-	for slime in slimes:
-		if slime is SlimeEnemy and not slime.is_dead:
-			var distance = global_position.distance_to(slime.global_position)
+	for enemy in enemies:
+		var is_valid_target = false
+		var is_dead = false
+
+		# Check if it's a valid enemy type and not dead
+		if enemy is SlimeEnemy:
+			is_valid_target = true
+			is_dead = enemy.is_dead
+		elif enemy is UfoEnemy:
+			is_valid_target = true
+			is_dead = enemy.is_dead
+
+		if is_valid_target and not is_dead:
+			var distance = global_position.distance_to(enemy.global_position)
 
 			# Check range limit
 			if homing_range > 0 and distance > homing_range:
@@ -158,18 +174,18 @@ func find_nearest_slime() -> Node2D:
 
 			if distance < nearest_distance:
 				nearest_distance = distance
-				nearest_slime = slime
+				nearest_enemy = enemy
 
-	return nearest_slime
+	return nearest_enemy
 
 
-func _collect_slimes(node: Node, slimes_array: Array) -> void:
-	"""Recursively collect all SlimeEnemy nodes"""
-	if node is SlimeEnemy:
-		slimes_array.append(node)
+func _collect_enemies(node: Node, enemies_array: Array) -> void:
+	"""Recursively collect all enemy nodes (SlimeEnemy and UfoEnemy)"""
+	if node is SlimeEnemy or node is UfoEnemy:
+		enemies_array.append(node)
 
 	for child in node.get_children():
-		_collect_slimes(child, slimes_array)
+		_collect_enemies(child, enemies_array)
 
 
 func _on_body_entered(body: Node) -> void:

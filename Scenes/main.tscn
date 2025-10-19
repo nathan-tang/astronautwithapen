@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://bepp0c3qpdy3s" path="res://Scripts/enemy_spawner_debug.gd" id="6_spawner"]
 [ext_resource type="Script" uid="uid://3qxao6p3yh8e" path="res://Scripts/star_background.gd" id="7_stars"]
 [ext_resource type="AudioStream" path="res://Assets/space.wav" id="8_music"]
+[ext_resource type="Script" path="res://Scripts/ufo_spawner.gd" id="9_ufo_spawner"]
 
 [node name="Main" type="Node2D"]
 position = Vector2(-501, -2)
@@ -70,6 +71,9 @@ script = ExtResource("5_pen")
 
 [node name="EnemySpawnerDebug" type="Node" parent="Player"]
 script = ExtResource("6_spawner")
+
+[node name="UfoSpawner" type="Node" parent="."]
+script = ExtResource("9_ufo_spawner")
 
 [node name="Planets" type="Node2D" parent="."]
 
