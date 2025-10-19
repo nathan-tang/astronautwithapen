@@ -22,7 +22,6 @@ func _ready() -> void:
 	var game_manager = get_tree().get_first_node_in_group("game_manager")
 	if game_manager:
 		game_manager.game_over.connect(_on_game_over)
-	else:
 
 	# Connect button signals
 	if play_again_button:
