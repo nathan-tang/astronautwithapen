@@ -104,7 +104,7 @@ modulate = Color(0.6, 0.3, 0.7, 1)
 
 [node name="Planet4" parent="Planets" instance=ExtResource("2_planet")]
 position = Vector2(485, -664)
-gravity_strength = 200.0
+gravity_strength = 250.0
 planet_radius = 240.0
 
 [node name="Sprite2D" parent="Planets/Planet4" index="0"]
@@ -112,7 +112,7 @@ modulate = Color(0.9, 0.7, 0.2, 1)
 
 [node name="Planet5" parent="Planets" instance=ExtResource("2_planet")]
 position = Vector2(-747, -320)
-gravity_strength = 280.0
+gravity_strength = 250.0
 planet_radius = 260.0
 
 [node name="Sprite2D" parent="Planets/Planet5" index="0"]
@@ -120,7 +120,7 @@ modulate = Color(0.7, 0.2, 0.5, 1)
 
 [node name="Planet6" parent="Planets" instance=ExtResource("2_planet")]
 position = Vector2(1447, 212)
-gravity_strength = 280.0
+gravity_strength = 250.0
 planet_radius = 260.0
 
 [node name="Sprite2D" parent="Planets/Planet6" index="0"]
@@ -128,7 +128,7 @@ modulate = Color(0.5, 0.8, 0.3, 1)
 
 [node name="Planet7" parent="Planets" instance=ExtResource("2_planet")]
 position = Vector2(63, 1728)
-gravity_strength = 220.0
+gravity_strength = 250.0
 planet_radius = 220.0
 
 [node name="Sprite2D" parent="Planets/Planet7" index="0"]
@@ -136,7 +136,7 @@ modulate = Color(0.9, 0.3, 0.3, 1)
 
 [node name="Planet8" parent="Planets" instance=ExtResource("2_planet")]
 position = Vector2(1207, 1389)
-gravity_strength = 220.0
+gravity_strength = 250.0
 planet_radius = 220.0
 
 [node name="Sprite2D" parent="Planets/Planet8" index="0"]

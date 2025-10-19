@@ -160,7 +160,8 @@ func update_meander(delta: float) -> void:
 
 	# Slow down as we approach target
 	var speed_factor = min(distance / 10.0, 1.0)
-	global_position += direction * meander_speed * speed_factor * delta
+	# Use position instead of global_position to properly update physics body
+	position += direction * meander_speed * speed_factor * delta
 
 
 func _pick_new_meander_target() -> void:
