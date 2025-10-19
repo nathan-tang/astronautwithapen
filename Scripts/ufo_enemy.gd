@@ -134,7 +134,6 @@ func _physics_process(delta: float) -> void:
 		if target_planet and target_planet != old_planet:
 			var to_ufo = global_position - target_planet.global_position
 			orbital_angle = to_ufo.angle()
-			print("UFO switching to new planet at ", target_planet.global_position)
 
 	# Orbital movement around target planet
 	if target_planet:
@@ -261,8 +260,6 @@ func _drop_slime() -> void:
 
 	# Emit signal
 	slime_dropped.emit(slime)
-
-	print("UFO dropped slime at ", slime.global_position)
 
 
 func _on_body_entered(body: Node) -> void:

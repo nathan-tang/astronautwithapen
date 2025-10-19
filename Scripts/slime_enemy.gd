@@ -387,7 +387,6 @@ func _deal_contact_damage_to_player(player: Player) -> void:
 		# Pass damage amount and slime's position for knockback calculation
 		player.take_damage(contact_damage, global_position)
 		last_contact_damage_time = current_time
-		print("Slime dealt ", contact_damage, " contact damage to player")
 
 
 func take_damage(amount: float) -> void:

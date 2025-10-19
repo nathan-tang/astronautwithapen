@@ -11,7 +11,6 @@ class_name GameOverUI
 
 
 func _ready() -> void:
-	print("GameOverUI: Initializing...")
 
 	# Hide initially
 	visible = false
@@ -23,9 +22,7 @@ func _ready() -> void:
 	var game_manager = get_tree().get_first_node_in_group("game_manager")
 	if game_manager:
 		game_manager.game_over.connect(_on_game_over)
-		print("GameOverUI: Connected to GameManager")
 	else:
-		print("GameOverUI: ERROR - Could not find GameManager!")
 
 	# Connect button signals
 	if play_again_button:
@@ -33,18 +30,15 @@ func _ready() -> void:
 	if title_screen_button:
 		title_screen_button.pressed.connect(_on_title_screen_pressed)
 
-	print("GameOverUI: Ready!")
 
 
 func _on_game_over(final_score: int) -> void:
 	"""Show game over screen with final score"""
-	print("GameOverUI: Game over received! Score: ", final_score)
 
 	if score_label:
 		score_label.text = "Final Score: %d" % final_score
 
 	visible = true
-	print("GameOverUI: Made visible, pausing game...")
 
 	# Pause the game
 	get_tree().paused = true
@@ -52,7 +46,6 @@ func _on_game_over(final_score: int) -> void:
 
 func _on_play_again_pressed() -> void:
 	"""Restart the current scene"""
-	print("GameOverUI: Restarting game...")
 
 	# Clean up all enemies and projectiles added to scene root
 	var root = get_tree().root
@@ -64,7 +57,6 @@ func _on_play_again_pressed() -> void:
 			child.queue_free()
 			cleanup_count += 1
 
-	print("GameOverUI: Cleaned up ", cleanup_count, " objects")
 
 	get_tree().paused = false
 	get_tree().reload_current_scene()

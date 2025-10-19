@@ -123,8 +123,6 @@ func take_damage(amount: float) -> void:
 	current_health = max(0, current_health - amount)
 	health_changed.emit(current_health, max_health)
 
-	print("Planet took ", amount, " damage. Health: ", current_health, "/", max_health)
-
 	# Flash red
 	if sprite:
 		sprite.modulate = Color.RED
@@ -141,7 +139,6 @@ func take_damage(amount: float) -> void:
 
 	# Check if destroyed
 	if current_health <= 0:
-		print("Planet destroyed! Emitting signal...")
 		planet_destroyed.emit(self)
 		queue_free()
 

@@ -587,8 +587,8 @@ func restore_ink(amount: float) -> void:
 
 ## Handle player death
 func die() -> void:
-	print("Player died!")
 	# TODO: Implement death behavior (respawn, game over, etc.)
+	pass
 
 
 ## Apply external force (like bomb explosions)

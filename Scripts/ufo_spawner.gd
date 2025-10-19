@@ -74,7 +74,6 @@ func spawn_ufo() -> void:
 	# Connect death signal to remove from tracking
 	ufo.died.connect(_on_ufo_died.bind(ufo))
 
-	print("Spawned UFO at ", spawn_position, " orbiting planet at ", target_planet.global_position)
 
 
 func _on_ufo_died(position: Vector2, ufo: UfoEnemy) -> void:

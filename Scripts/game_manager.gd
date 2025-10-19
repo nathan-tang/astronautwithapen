@@ -14,11 +14,8 @@ var is_game_over: bool = false
 
 
 func _ready() -> void:
-	print("GameManager: Starting initialization...")
-
 	# Add to game_manager group so UI can find us
 	add_to_group("game_manager")
-	print("GameManager: Added to game_manager group")
 
 	# Wait for scene tree to be ready
 	await get_tree().process_frame
@@ -29,20 +26,16 @@ func _ready() -> void:
 	# Connect to existing enemies
 	_connect_to_existing_enemies()
 
-	print("GameManager: Initialization complete!")
-
 
 func _connect_to_planets() -> void:
 	"""Connect to all planet destroyed signals"""
 	var planets = get_tree().get_nodes_in_group("planets")
-	print("GameManager: Found ", planets.size(), " planets to connect to")
 
 	for planet in planets:
 		if planet is Planet:
 			planet.planet_destroyed.connect(_on_planet_destroyed)
-			print("GameManager: Connected to planet at ", planet.global_position)
 		else:
-			print("GameManager: Warning - found non-Planet in planets group: ", planet)
+			push_warning("GameManager: Found non-Planet in planets group: " + str(planet))
 
 
 func _connect_to_existing_enemies() -> void:
@@ -80,7 +73,6 @@ func _on_slime_died(position: Vector2) -> void:
 		return
 
 	add_score(slime_points)
-	print("Slime killed! +%d points (Total: %d)" % [slime_points, current_score])
 
 
 func _on_ufo_died(position: Vector2) -> void:
@@ -89,7 +81,6 @@ func _on_ufo_died(position: Vector2) -> void:
 		return
 
 	add_score(ufo_points)
-	print("UFO killed! +%d points (Total: %d)" % [ufo_points, current_score])
 
 
 func add_score(points: int) -> void:
@@ -103,20 +94,14 @@ func _on_planet_destroyed(planet: Planet) -> void:
 	if is_game_over:
 		return
 
-	print("Planet destroyed! Checking remaining planets...")
-
 	# Wait a frame for the planet to be removed from the group
 	await get_tree().process_frame
 
 	# Check if any planets remain
 	var remaining_planets = get_tree().get_nodes_in_group("planets")
-	print("Remaining planets: ", remaining_planets.size())
 
 	if remaining_planets.is_empty():
-		print("No planets left! Triggering game over...")
 		trigger_game_over()
-	else:
-		print("Still have planets remaining")
 
 
 func trigger_game_over() -> void:
@@ -125,5 +110,4 @@ func trigger_game_over() -> void:
 		return
 
 	is_game_over = true
-	print("GAME OVER! Final Score: %d" % current_score)
 	game_over.emit(current_score)

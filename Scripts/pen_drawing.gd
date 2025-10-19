@@ -259,13 +259,11 @@ func spawn_bomb(points: Array[Vector2]) -> void:
 	if player != null:
 		var distance_from_player = player.global_position.distance_to(global_center)
 		if distance_from_player > max_spawn_range:
-			print("Too far from player to spawn bomb! Distance: ", distance_from_player)
 			show_drawing_feedback(false)
 			return
 
 	# Check if player has enough ink
 	if player == null or not player.use_ink(bomb_ink_cost):
-		print("Not enough ink to spawn bomb! Need ", bomb_ink_cost)
 		show_drawing_feedback(false)
 		return
 
@@ -299,13 +297,11 @@ func spawn_bullet(points: Array[Vector2]) -> void:
 	if player != null:
 		var distance_from_player = player.global_position.distance_to(global_centroid)
 		if distance_from_player > max_spawn_range:
-			print("Too far from player to spawn bullet! Distance: ", distance_from_player)
 			show_drawing_feedback(false)
 			return
 
 	# Check if player has enough ink
 	if player == null or not player.use_ink(bullet_ink_cost):
-		print("Not enough ink to spawn bullet! Need ", bullet_ink_cost)
 		show_drawing_feedback(false)
 		return
 
@@ -343,45 +339,8 @@ func spawn_unknown_shape_effect(points: Array[Vector2]) -> void:
 
 func spawn_shape_particles(position: Vector2, color: Color) -> void:
 	"""Spawn colored particle burst at the given position"""
-	# Create particle system
-	var particles = GPUParticles2D.new()
-	particles.global_position = position
-	particles.emitting = true
-	particles.one_shot = true
-	particles.explosiveness = 5.0
-	particles.amount = 100
-	particles.lifetime = 1.0
-	particles.local_coords = false
-
-	var particle_mat = ParticleProcessMaterial.new()
-	particle_mat.particle_flag_disable_z = true
-	particle_mat.direction = Vector3(0, 0, 0)
-	particle_mat.spread = 180.0
-	particle_mat.initial_velocity_min = 50.0
-	particle_mat.initial_velocity_max = 150.0
-	particle_mat.gravity = Vector3(0, 100, 0)  # Slight downward drift
-	particle_mat.damping_min = 50.0
-	particle_mat.damping_max = 100.0
-	particle_mat.scale_min = 2.0
-	particle_mat.scale_max = 4.0
-
-	# Color that fades out
-	var gradient = Gradient.new()
-	gradient.add_point(0.0, color)
-	gradient.add_point(0.5, color.lightened(0.2))
-	gradient.add_point(1.0, Color(color.r, color.g, color.b, 0.0))
-	var gradient_texture = GradientTexture1D.new()
-	gradient_texture.gradient = gradient
-	particle_mat.color_ramp = gradient_texture
-
-	particles.process_material = particle_mat
-
-	# Add to scene root
-	get_tree().root.add_child(particles)
-
-	# Clean up after effect finishes
-	await get_tree().create_timer(2.0).timeout
-	particles.queue_free()
+	var particles = ParticleEffects.create_burst(position, color)
+	ParticleEffects.spawn_and_cleanup(particles, get_tree().root, 2.0)
 
 
 func calculate_centroid(points: Array[Vector2]) -> Vector2:

@@ -255,43 +255,8 @@ func create_trail_material() -> ParticleProcessMaterial:
 
 func create_impact_effect() -> void:
 	"""Create visual effect when bullet hits and is destroyed"""
-	var impact_particles = GPUParticles2D.new()
-	impact_particles.global_position = global_position
-	impact_particles.emitting = true
-	impact_particles.one_shot = true
-	impact_particles.explosiveness = 1.0
-	impact_particles.amount = 15
-	impact_particles.lifetime = 0.4
-	impact_particles.local_coords = false
-
-	var particle_mat = ParticleProcessMaterial.new()
-	particle_mat.particle_flag_disable_z = true
-	particle_mat.direction = Vector3(-direction.x, -direction.y, 0)  # Bounce back
-	particle_mat.spread = 60.0
-	particle_mat.initial_velocity_min = 50.0
-	particle_mat.initial_velocity_max = 150.0
-	particle_mat.gravity = Vector3(0, 0, 0)
-	particle_mat.damping_min = 100.0
-	particle_mat.damping_max = 200.0
-	particle_mat.scale_min = 0.5
-	particle_mat.scale_max = 1.5
-
-	# Impact color (cyan/blue)
-	var gradient = Gradient.new()
-	gradient.add_point(0.0, Color.CYAN)
-	gradient.add_point(1.0, Color(0.0, 1.0, 1.0, 0.0))
-	var gradient_texture = GradientTexture1D.new()
-	gradient_texture.gradient = gradient
-	particle_mat.color_ramp = gradient_texture
-
-	impact_particles.process_material = particle_mat
-
-	# Add to scene root
-	get_tree().root.add_child(impact_particles)
-
-	# Clean up after effect finishes
-	await get_tree().create_timer(1.0).timeout
-	impact_particles.queue_free()
+	var impact_particles = ParticleEffects.create_burst(global_position, Color.CYAN, 15, 60.0)
+	ParticleEffects.spawn_and_cleanup(impact_particles, get_tree().root, 1.0)
 
 
 func apply_explosion_force() -> void:
@@ -337,5 +302,3 @@ func initialize(spawn_position: Vector2, fire_direction: Vector2) -> void:
 	current_speed = 0.0  # Start at zero speed
 	linear_velocity = Vector2.ZERO  # Start with no velocity
 	rotation = direction.angle()
-
-	print("Bullet initialized at ", spawn_position, " - will accelerate to ", bullet_speed)

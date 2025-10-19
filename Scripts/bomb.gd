@@ -203,44 +203,8 @@ func explode() -> void:
 
 func create_explosion_effect() -> void:
 	"""Visual explosion effect"""
-	var explosion_particles = GPUParticles2D.new()
-	explosion_particles.global_position = global_position
-	explosion_particles.emitting = true
-	explosion_particles.one_shot = true
-	explosion_particles.explosiveness = 0.5
-	explosion_particles.amount = 500  # Way more particles
-	explosion_particles.lifetime = 0.25  # Last longer
-	explosion_particles.local_coords = false
-
-	var particle_mat = ParticleProcessMaterial.new()
-	particle_mat.particle_flag_disable_z = true
-	particle_mat.direction = Vector3(0, 0, 0)
-	particle_mat.spread = 180.0
-	particle_mat.initial_velocity_min = 100.0  # Faster explosion
-	particle_mat.initial_velocity_max = 500.0
-	particle_mat.gravity = Vector3(0, 0, 0)
-	particle_mat.damping_min = 30.0  # Less damping for more dramatic spread
-	particle_mat.damping_max = 60.0
-	particle_mat.scale_min = 2.0  # Much bigger particles
-	particle_mat.scale_max = 4.0
-
-	# Fiery colors
-	var gradient = Gradient.new()
-	gradient.add_point(0.0, Color.YELLOW)
-	gradient.add_point(0.5, Color.ORANGE)
-	gradient.add_point(1.0, Color(0.5, 0.0, 0.0, 0.0))
-	var gradient_texture = GradientTexture1D.new()
-	gradient_texture.gradient = gradient
-	particle_mat.color_ramp = gradient_texture
-
-	explosion_particles.process_material = particle_mat
-
-	# Add to scene root so it persists after bomb is deleted
-	get_tree().root.add_child(explosion_particles)
-
-	# Clean up after effect finishes (wait longer for all particles to fade)
-	await get_tree().create_timer(2.0).timeout
-	explosion_particles.queue_free()
+	var explosion_particles = ParticleEffects.create_explosion(global_position, Color.YELLOW, Color.ORANGE, 500)
+	ParticleEffects.spawn_and_cleanup(explosion_particles, get_tree().root, 2.0)
 
 
 func apply_explosion_force() -> void:
@@ -274,7 +238,6 @@ func apply_explosion_force() -> void:
 					if body is SlimeEnemy or body is UfoEnemy:
 						var damage = explosion_damage * falloff
 						body.take_damage(damage)
-						print("Bomb dealt ", damage, " damage to enemy")
 			elif body is CharacterBody2D:
 				# For CharacterBody2D (like player), use external_velocity to apply force over time
 				var player_impulse = impulse * player_explosion_multiplier
@@ -284,7 +247,6 @@ func apply_explosion_force() -> void:
 					# Fallback: add to external_velocity if it exists
 					if "external_velocity" in body:
 						body.external_velocity += player_impulse
-				print("Applied impulse to player: ", player_impulse)
 
 
 func initialize(spawn_position: Vector2, initial_velocity: Vector2) -> void:

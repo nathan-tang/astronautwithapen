@@ -65,4 +65,3 @@ func spawn_enemy_at_cursor() -> void:
 	# Add to scene root so it's not a child of the player
 	get_tree().root.add_child(enemy)
 
-	print("Spawned enemy at ", mouse_world_pos)

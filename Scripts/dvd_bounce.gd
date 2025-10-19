@@ -37,7 +37,6 @@ func _ready() -> void:
 		elif sprite_frames.has_animation(&"idle"):
 			play(&"idle")
 
-	print("DVDBounce ready - Position: ", position, " Screen size: ", screen_size)
 
 
 func _process(delta: float) -> void:
