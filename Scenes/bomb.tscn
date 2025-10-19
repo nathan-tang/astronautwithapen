@@ -3,8 +3,8 @@
 [ext_resource type="Script" uid="uid://c8xmm7rtlxdpk" path="res://Scripts/bomb.gd" id="1_bomb"]
 [ext_resource type="Texture2D" uid="uid://dm858vqilikcp" path="res://Assets/Sprites/red_bullet.png" id="2_sprite"]
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_1"]
-radius = 40.0
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_1"]
+size = Vector2(80, 80)
 
 [node name="Bomb" type="RigidBody2D"]
 collision_layer = 2
@@ -18,4 +18,4 @@ region_enabled = true
 region_rect = Rect2(159.61511, 127.583725, 16.715515, 17.256302)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource("CircleShape2D_1")
+shape = SubResource("RectangleShape2D_1")

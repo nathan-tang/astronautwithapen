@@ -16,8 +16,8 @@ class_name Player
 
 @export_group("Movement")
 @export var move_speed: float = 500.0
-@export var jump_force: float = 1000.0
-@export var jump_gravity_multiplier: float = 6.0  ## Jump force scales with gravity strength
+@export var jump_force: float = 500.0
+@export var jump_gravity_multiplier: float = 0.1  ## Jump force scales with gravity strength
 @export var jump_grace_period: float = 0.3  ## Seconds of reduced gravity after jump
 @export var jump_grace_gravity_reduction: float = 0.02  ## Gravity multiplier during grace period (0.05 = 95% reduction)
 @export var air_control: float = 1.0  ## Movement control while airborne (0-1)
@@ -58,6 +58,9 @@ var jump_grace_timer: float = 0.0  ## Time remaining in jump grace period
 
 # External forces (like explosions)
 var external_velocity: Vector2 = Vector2.ZERO
+var bomb_boost_velocity: Vector2 = Vector2.ZERO
+var bomb_boost_timer: float = 0.0
+var bomb_boost_duration: float = 0.5
 
 # For smooth rotation
 var target_rotation: float = 0.0
@@ -139,30 +142,56 @@ func _physics_process(delta: float) -> void:
 	if jump_grace_timer > 0:
 		jump_grace_timer -= delta
 
-	# 7. Apply external forces (explosions, etc.)
+	# 6.5. Update bomb boost timer
+	if bomb_boost_timer > 0:
+		bomb_boost_timer -= delta
+
+	# 7. Check if we're in bomb boost mode (overrides normal physics)
+	if bomb_boost_timer > 0:
+		# During bomb boost, maintain constant velocity ignoring gravity
+		velocity = bomb_boost_velocity
+		move_and_slide()
+
+		# Update ground state even during boost
+		var physically_grounded = check_ground()
+		if physically_grounded:
+			is_grounded = true
+			ground_coyote_time = 0.21
+		else:
+			if ground_coyote_time > 0:
+				ground_coyote_time -= delta
+				is_grounded = true
+			else:
+				is_grounded = false
+
+		return  # Skip normal physics processing
+
+	# 8. Apply external forces (explosions, etc.)
 	if external_velocity.length() > 0:
 		velocity += external_velocity
-		external_velocity = Vector2.ZERO  # Clear after applying once
+		# Start bomb boost mode
+		bomb_boost_velocity = velocity
+		bomb_boost_timer = bomb_boost_duration
+		external_velocity = Vector2.ZERO
+		return  # Let bomb boost take over next frame
 
-	# 8. Apply gravity
+	# 9. Apply gravity
 	var gravity_to_apply = net_gravity
 	if jump_grace_timer > 0:
 		gravity_to_apply *= jump_grace_gravity_reduction
 
 	if is_grounded:
-		# When grounded, set normal velocity to a constant value to maintain contact
-		# Don't accumulate gravity or we'll build up infinite velocity into the surface
+		# When grounded, only maintain tangential velocity
+		# Don't push into surface or accumulate velocity
 		var surface_tangent = Vector2(-ground_normal.y, ground_normal.x)
 		var tangent_vel = velocity.dot(surface_tangent) * surface_tangent
-		var target_normal_vel = ground_normal * -50.0  # Small constant push into surface
-		velocity = tangent_vel + target_normal_vel
+		velocity = tangent_vel
 	else:
 		# When airborne, apply full gravity
 		velocity += gravity_to_apply * delta
 
-	# 9. Clamp velocity to prevent extreme speeds
-	if velocity.length() > max_speed:
-		velocity = velocity.normalized() * max_speed
+	# DON'T clamp velocity before external forces are applied
+	# This allows bomb boosts to exceed normal max_speed
 
 	var vel_before_slide = velocity
 	move_and_slide()
@@ -283,6 +312,9 @@ func handle_movement(delta: float) -> void:
 ## Handle jump input
 func handle_jump() -> void:
 	if Input.is_action_just_pressed("jump") and is_grounded:
+		# Cancel bomb boost when jumping
+		bomb_boost_timer = 0.0
+
 		# Calculate adaptive jump force based on current gravity strength
 		var adaptive_jump = jump_force + (gravity_component.current_gravity_strength * jump_gravity_multiplier)
 
@@ -557,3 +589,9 @@ func restore_ink(amount: float) -> void:
 func die() -> void:
 	print("Player died!")
 	# TODO: Implement death behavior (respawn, game over, etc.)
+
+
+## Apply external force (like bomb explosions)
+func apply_external_force(force: Vector2) -> void:
+	"""Apply an external force to the player (used by explosions, etc.)"""
+	external_velocity += force

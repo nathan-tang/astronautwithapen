@@ -40,7 +40,7 @@ signal shape_recognized(shape_type: ShapeRecognizer.ShapeType, points: Array[Vec
 @export_group("Projectile Spawning")
 @export var spawn_projectiles: bool = true
 @export var bullet_spawn_offset: float = 50.0  ## Distance from mouse to spawn bullet
-@export var max_spawn_range: float = 1000.0  ## Maximum distance from player to spawn projectiles
+@export var max_spawn_range: float = 500.0  ## Maximum distance from player to spawn projectiles
 @export var show_range_indicator: bool = true  ## Show visual range circle
 
 # Drawing state

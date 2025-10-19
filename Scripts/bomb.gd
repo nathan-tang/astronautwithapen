@@ -11,7 +11,7 @@ signal exploded(position: Vector2)
 @export var explosion_radius: float = 150.0
 @export var explosion_force: float = 1000.0
 @export var explosion_damage: float = 25.0  ## Damage dealt to enemies in explosion radius
-@export var player_explosion_multiplier: float = 4.0  ## Extra force multiplier for player
+@export var player_explosion_multiplier: float = 5.0  ## Extra force multiplier for player
 @export var explode_on_impact: bool = false  ## Explode immediately on collision
 
 # State

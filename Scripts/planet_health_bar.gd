@@ -25,9 +25,15 @@ func _ready() -> void:
 	# Initialize
 	health_percentage = planet.current_health / planet.max_health
 
-	# Auto-size ring to planet radius
+	# Defer ring sizing to ensure planet radius is set
+	call_deferred("_update_ring_size")
+
+
+func _update_ring_size() -> void:
+	"""Update ring radius based on planet's actual radius"""
 	if planet:
 		ring_radius = planet.planet_radius + 15.0
+		queue_redraw()
 
 
 func _draw() -> void:
