@@ -75,6 +75,18 @@ var pen_base_position: Vector2 = Vector2(25, -50)
 var pen_bob_amount: float = 6.0
 var pen_bob_speed: float = 15.0
 
+# Pen swing attack
+var is_swinging: bool = false
+var swing_cooldown: float = 0.0
+var swing_duration: float = 0.2
+var swing_timer: float = 0.0
+@export var swing_damage: float = 20.0
+@export var swing_range: float = 150.0
+@export var swing_knockback: float = 500.0
+var swing_angle_start: float = 1.57  # 90 degrees
+var swing_angle_end: float = 3.14  # 180 degrees
+var has_hit_this_swing: Array[Node] = []  # Track what we've hit this swing
+
 
 func _ready() -> void:
 	# Create gravity component
@@ -105,6 +117,9 @@ func _physics_process(delta: float) -> void:
 			if animated_sprite:
 				animated_sprite.modulate = Color.WHITE
 
+	# 0.5. Handle swing attack
+	handle_swing_attack(delta)
+
 	# 1. Calculate net gravity from all sources
 	var net_gravity = gravity_component.calculate_gravity(global_position)
 
@@ -125,8 +140,9 @@ func _physics_process(delta: float) -> void:
 		jump_grace_timer -= delta
 
 	# 7. Apply external forces (explosions, etc.)
-	velocity += external_velocity
-	external_velocity = external_velocity.lerp(Vector2.ZERO, 0.1)  # Decay external forces
+	if external_velocity.length() > 0:
+		velocity += external_velocity
+		external_velocity = Vector2.ZERO  # Clear after applying once
 
 	# 8. Apply gravity
 	var gravity_to_apply = net_gravity
@@ -356,12 +372,16 @@ func update_pen_bob() -> void:
 	if not pen_sprite:
 		return
 
+	# Don't animate bobbing during swing
+	if is_swinging:
+		return
+
 	# Flip pen position and rotation based on sprite flip (player facing direction)
 	var pen_x = pen_base_position.x
-	var pen_rotation = -0.5
+	var pen_rotation = -0.349066  # -20 degrees
 	if animated_sprite and animated_sprite.flip_h:
 		pen_x = -pen_base_position.x
-		pen_rotation = 0.5
+		pen_rotation = 0.349066  # 20 degrees (flipped)
 
 	pen_sprite.rotation = pen_rotation
 
@@ -374,6 +394,100 @@ func update_pen_bob() -> void:
 		# Reset to base position when not moving
 		pen_sprite.position = Vector2(pen_x, pen_base_position.y)
 		pen_bob_time = 0.0
+
+
+func handle_swing_attack(delta: float) -> void:
+	"""Handle pen swing attack"""
+	# Update cooldown
+	if swing_cooldown > 0:
+		swing_cooldown -= delta
+
+	# Check for left click input
+	if Input.is_action_just_pressed("attack") and swing_cooldown <= 0 and not is_swinging:
+		start_swing()
+
+	# Update ongoing swing
+	if is_swinging:
+		swing_timer += delta
+		var swing_progress = swing_timer / swing_duration
+
+		if swing_progress >= 1.0:
+			# Swing complete
+			is_swinging = false
+			swing_cooldown = 0.2
+			has_hit_this_swing.clear()
+		else:
+			# Animate swing and check for hits
+			animate_swing(swing_progress)
+			check_swing_hits()
+
+
+func start_swing() -> void:
+	"""Start a pen swing attack"""
+	is_swinging = true
+	swing_timer = 0.0
+	has_hit_this_swing.clear()
+
+
+func animate_swing(progress: float) -> void:
+	"""Animate the pen swinging"""
+	if not pen_sprite:
+		return
+
+	# Determine facing direction
+	var facing_right = animated_sprite and not animated_sprite.flip_h
+	var pen_x = pen_base_position.x if facing_right else -pen_base_position.x
+
+	# Swing from up (-90 degrees) to forward (0 degrees)
+	var base_angle = lerp(swing_angle_start, swing_angle_end, progress)
+
+	# Flip angle if facing left
+	if not facing_right:
+		base_angle = PI - base_angle
+
+	pen_sprite.rotation = base_angle
+	pen_sprite.position = Vector2(pen_x, pen_base_position.y)
+
+
+func check_swing_hits() -> void:
+	"""Check if pen swing hits any enemies"""
+	if not pen_sprite:
+		return
+
+	# Get pen tip position in world space
+	var pen_tip_offset = Vector2(swing_range, 0).rotated(pen_sprite.rotation)
+	var pen_tip_global = pen_sprite.global_position + pen_tip_offset
+
+	# Check for enemies in range
+	var enemies = get_tree().get_nodes_in_group("enemies")
+	for enemy in enemies:
+		if enemy in has_hit_this_swing:
+			continue  # Already hit this enemy
+
+		if enemy is SlimeEnemy and not enemy.is_dead:
+			var distance = global_position.distance_to(enemy.global_position)
+			if distance < swing_range:
+				# Hit this enemy
+				hit_enemy(enemy)
+				has_hit_this_swing.append(enemy)
+
+
+func hit_enemy(enemy: SlimeEnemy) -> void:
+	"""Deal damage and knockback to an enemy"""
+	# Deal damage
+	enemy.take_damage(swing_damage)
+
+	# Play hit sound
+	var hit_sound = AudioStreamPlayer.new()
+	hit_sound.stream = load("res://Assets/sounds/gun.mp3")
+	hit_sound.volume_db = -5.0
+	add_child(hit_sound)
+	hit_sound.play()
+	hit_sound.finished.connect(hit_sound.queue_free)
+
+	# Apply knockback
+	var knockback_direction = (enemy.global_position - global_position).normalized()
+	enemy.apply_central_impulse(knockback_direction * swing_knockback)
 
 
 ## Damage the player
@@ -401,7 +515,7 @@ func take_damage(amount: float, damage_source_pos: Vector2 = Vector2.ZERO) -> vo
 	# Play damage sound
 	var damage_sound = AudioStreamPlayer.new()
 	damage_sound.stream = load("res://Assets/sounds/damage.mp3")
-	damage_sound.volume_db = -5.0
+	damage_sound.volume_db = -15.0
 	add_child(damage_sound)
 	damage_sound.play()
 	# Clean up sound after it finishes

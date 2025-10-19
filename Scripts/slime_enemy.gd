@@ -8,7 +8,7 @@ signal died(position: Vector2)
 signal damaged(amount: float, position: Vector2)
 
 @export_group("Enemy Settings")
-@export var max_health: float = 30.0
+@export var max_health: float = 60.0  ## Can withstand 3 hits at 20 damage each
 @export var patrol_speed: float = 80.0
 @export var patrol_direction: int = 1  ## 1 for right, -1 for left
 @export var death_particle_count: int = 30
@@ -35,9 +35,22 @@ signal damaged(amount: float, position: Vector2)
 @export var rotation_speed: float = 5.0  ## How fast slime rotates to match gravity
 @export var rotation_smoothing: float = 0.1  ## Lower = smoother rotation
 
+@export_group("Planet Attack")
+@export var planet_attack_damage: float = 10.0  ## Damage dealt to planet
+@export var planet_attack_interval_min: float = 5.0  ## Minimum time between attacks
+@export var planet_attack_interval_max: float = 15.0  ## Maximum time between attacks
+@export var planet_attack_charge_time: float = 3.0  ## Windup time before attack
+
 # State
-var current_health: float = 30.0
+var current_health: float = 60.0
 var is_dead: bool = false
+
+# Planet attack state
+var nearest_planet: Planet = null
+var planet_attack_timer: float = 0.0
+var is_charging_attack: bool = false
+var charge_timer: float = 0.0
+var original_sprite_modulate: Color = Color.WHITE
 
 # Gravity system
 var gravity_component: GravityEntity
@@ -102,9 +115,13 @@ func _ready() -> void:
 	# Start idle animation
 	if animated_sprite:
 		animated_sprite.play("idle")
+		original_sprite_modulate = animated_sprite.modulate
 
 	# Find player reference
 	player_ref = get_tree().get_first_node_in_group("player")
+
+	# Initialize planet attack timer with random interval
+	planet_attack_timer = randf_range(planet_attack_interval_min, planet_attack_interval_max)
 
 	# Create slime sound (plays when near player)
 	slime_sound = AudioStreamPlayer.new()
@@ -137,6 +154,9 @@ func _physics_process(delta: float) -> void:
 		else:
 			if slime_sound.playing:
 				slime_sound.stop()
+
+	# Update planet attack system
+	update_planet_attack(delta)
 
 	# Update primary planet
 	gravity_component.update_primary_planet(global_position)
@@ -468,6 +488,58 @@ func smooth_rotate_to_gravity(delta: float) -> void:
 
 	# Smooth rotation using lerp_angle to handle angle wrapping
 	rotation = lerp_angle(rotation, target_rotation, rotation_speed * delta)
+
+
+func update_planet_attack(delta: float) -> void:
+	"""Update planet attack system"""
+	# Find nearest planet
+	find_nearest_planet()
+
+	if not is_charging_attack:
+		# Count down to next attack
+		planet_attack_timer -= delta
+		if planet_attack_timer <= 0:
+			# Start charging attack
+			is_charging_attack = true
+			charge_timer = 0.0
+			# Reset for next attack with random interval
+			planet_attack_timer = randf_range(planet_attack_interval_min, planet_attack_interval_max)
+	else:
+		# Charging attack
+		charge_timer += delta
+
+		# Update color (turn red over 3 seconds)
+		var charge_percentage = min(charge_timer / planet_attack_charge_time, 1.0)
+		if animated_sprite:
+			animated_sprite.modulate = original_sprite_modulate.lerp(Color.RED, charge_percentage)
+
+		# Execute attack when charge completes
+		if charge_timer >= planet_attack_charge_time:
+			execute_planet_attack()
+			is_charging_attack = false
+			# Reset color
+			if animated_sprite:
+				animated_sprite.modulate = original_sprite_modulate
+
+
+func find_nearest_planet() -> void:
+	"""Find the closest planet to this slime"""
+	var planets = get_tree().get_nodes_in_group("planets")
+	var closest_distance = INF
+	nearest_planet = null
+
+	for planet in planets:
+		if planet is Planet:
+			var distance = global_position.distance_to(planet.global_position)
+			if distance < closest_distance:
+				closest_distance = distance
+				nearest_planet = planet
+
+
+func execute_planet_attack() -> void:
+	"""Deal damage to the nearest planet"""
+	if nearest_planet and is_instance_valid(nearest_planet):
+		nearest_planet.take_damage(planet_attack_damage)
 
 
 func check_for_edge() -> bool:

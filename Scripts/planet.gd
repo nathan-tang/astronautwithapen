@@ -11,16 +11,45 @@ class_name Planet
 @export_group("Visual Settings")
 @export var planet_radius: float = 64.0  ## Visual/collision radius
 
+@export_group("Health Settings")
+@export var max_health: float = 250.0  ## Can sustain 25 attacks at 10 damage each
+
+# State
+var current_health: float = 250.0
+
+# Signals
+signal health_changed(new_health: float, max_health: float)
+signal planet_destroyed(planet: Planet)
+
 @onready var collision_shape: CollisionShape2D = $StaticBody2D/CollisionShape2D
 @onready var sprite: Sprite2D = $Sprite2D
 
+# Flash effect
+var flash_timer: float = 0.0
+var original_modulate: Color
+
 
 func _ready() -> void:
+	# Initialize health
+	current_health = max_health
+
+	# Store original color
+	if sprite:
+		original_modulate = sprite.modulate
+
 	# Set up collision shapes based on radius values
 	_setup_shapes()
 
 	# Add to "planets" group so objects can find us
 	add_to_group("planets")
+
+
+func _process(delta: float) -> void:
+	# Handle flash effect
+	if flash_timer > 0:
+		flash_timer -= delta
+		if flash_timer <= 0 and sprite:
+			sprite.modulate = original_modulate
 
 
 func _setup_shapes() -> void:
@@ -58,3 +87,28 @@ func get_gravity_at_position(pos: Vector2) -> Vector2:
 
 	var falloff = calculate_falloff(distance)
 	return direction.normalized() * gravity_strength * falloff
+
+
+## Take damage
+func take_damage(amount: float) -> void:
+	current_health = max(0, current_health - amount)
+	health_changed.emit(current_health, max_health)
+
+	# Flash red
+	if sprite:
+		sprite.modulate = Color.RED
+		flash_timer = 0.1
+
+	# Play hit sound
+	var hit_sound = AudioStreamPlayer.new()
+	hit_sound.stream = load("res://Assets/sounds/gun.mp3")
+	hit_sound.volume_db = -10.0
+	add_child(hit_sound)
+	hit_sound.play()
+	# Clean up sound after it finishes
+	hit_sound.finished.connect(hit_sound.queue_free)
+
+	# Check if destroyed
+	if current_health <= 0:
+		planet_destroyed.emit(self)
+		queue_free()
