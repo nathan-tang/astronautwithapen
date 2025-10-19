@@ -71,13 +71,21 @@ func _ready() -> void:
 	is_spawning = true
 	spawn_timer = 0.0
 
+	# Set initial opacity to low
+	if sprite:
+		sprite.modulate.a = 0.0
+
 	# Find nearest planet to orbit
 	_find_target_planet()
 
-	# Initialize orbital angle based on current position
+	# Initialize orbital angle and rotation based on current position
 	if target_planet:
 		var to_ufo = global_position - target_planet.global_position
 		orbital_angle = to_ufo.angle()
+
+		# Set initial rotation to face planet
+		var to_planet = target_planet.global_position - global_position
+		rotation = to_planet.angle() - PI / 2.0
 
 	# Hide beam initially
 	if beam_sprite:
@@ -101,9 +109,15 @@ func _physics_process(delta: float) -> void:
 		var current_scale = lerp(spawn_start_scale, 1.0, ease_progress)
 		scale = Vector2(current_scale, current_scale)
 
+		# Fade in opacity
+		if sprite:
+			sprite.modulate.a = ease_progress
+
 		if spawn_timer >= spawn_duration:
 			is_spawning = false
 			scale = Vector2.ONE
+			if sprite:
+				sprite.modulate.a = 1.0
 
 		# Don't do other behaviors while spawning
 		return
@@ -111,9 +125,16 @@ func _physics_process(delta: float) -> void:
 	# Update primary planet
 	gravity_component.update_primary_planet(global_position)
 
-	# Find target planet if we don't have one
+	# Find target planet if we don't have one or if current one is destroyed
 	if not target_planet or not is_instance_valid(target_planet):
+		var old_planet = target_planet
 		_find_target_planet()
+
+		# If we switched to a new planet, recalculate orbital angle
+		if target_planet and target_planet != old_planet:
+			var to_ufo = global_position - target_planet.global_position
+			orbital_angle = to_ufo.angle()
+			print("UFO switching to new planet at ", target_planet.global_position)
 
 	# Orbital movement around target planet
 	if target_planet:
@@ -253,16 +274,8 @@ func _on_body_entered(body: Node) -> void:
 		return
 
 	# Check if hit by bullet
-	if body.has_method("get_class") and body.get_class() == "Bullet":
-		if body.has("damage"):
-			take_damage(body.damage)
-		return
-
-	# Check if body is Bullet class
-	var bullet_script = load("res://Scripts/bullet.gd")
-	if bullet_script and body.get_script() == bullet_script:
-		if body.has("damage"):
-			take_damage(body.damage)
+	if body is Bullet:
+		take_damage(body.damage)
 		return
 
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://dr5hn3wk2qvjl"]
+[gd_scene load_steps=12 format=3 uid="uid://dr5hn3wk2qvjl"]
 
 [ext_resource type="PackedScene" path="res://Scenes/player_ui.tscn" id="1_21xkr"]
 [ext_resource type="PackedScene" uid="uid://b7kf8yqw2xn4v" path="res://Scenes/player.tscn" id="1_player"]
@@ -10,6 +10,8 @@
 [ext_resource type="Script" uid="uid://3qxao6p3yh8e" path="res://Scripts/star_background.gd" id="7_stars"]
 [ext_resource type="AudioStream" path="res://Assets/space.wav" id="8_music"]
 [ext_resource type="Script" path="res://Scripts/ufo_spawner.gd" id="9_ufo_spawner"]
+[ext_resource type="Script" path="res://Scripts/game_manager.gd" id="10_game_manager"]
+[ext_resource type="PackedScene" path="res://Scenes/game_over_ui.tscn" id="11_game_over"]
 
 [node name="Main" type="Node2D"]
 position = Vector2(-501, -2)
@@ -55,7 +57,12 @@ star_max_size = 5.0
 star_min_brightness = 0.5
 parallax_strength = 0.4
 
+[node name="GameManager" type="Node" parent="."]
+script = ExtResource("10_game_manager")
+
 [node name="PlayerUI" parent="." instance=ExtResource("1_21xkr")]
+
+[node name="GameOverUI" parent="." instance=ExtResource("11_game_over")]
 
 [node name="Player" parent="." instance=ExtResource("1_player")]
 position = Vector2(576, 200)

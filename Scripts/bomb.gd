@@ -266,16 +266,15 @@ func apply_explosion_force() -> void:
 
 			# Apply force based on body type
 			if body is RigidBody2D:
-				body.apply_central_impulse(impulse)
-				print("Applied impulse to RigidBody2D: ", impulse)
 				# Don't damage other bombs, only enemies
 				if not body is Bomb:
 					body.apply_central_impulse(impulse)
 
-					# Deal damage to enemies (SlimeEnemy is a RigidBody2D)
-					if body.has_method("take_damage"):
+					# Deal damage to enemies (SlimeEnemy and UfoEnemy)
+					if body is SlimeEnemy or body is UfoEnemy:
 						var damage = explosion_damage * falloff
 						body.take_damage(damage)
+						print("Bomb dealt ", damage, " damage to enemy")
 			elif body is CharacterBody2D:
 				# For CharacterBody2D (like player), use external_velocity to apply force over time
 				var player_impulse = impulse * player_explosion_multiplier

@@ -22,17 +22,10 @@ size_flags_horizontal = 0
 size_flags_vertical = 0
 theme_override_constants/separation = 10
 
-[node name="HealthLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+[node name="ScoreLabel" type="Label" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "Health"
+text = "Score: 0"
 theme_type_variation = &"HeaderMedium"
-
-[node name="HealthBar" type="ProgressBar" parent="MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(200, 30)
-layout_mode = 2
-max_value = 100.0
-value = 100.0
-show_percentage = false
 
 [node name="InkLabel" type="Label" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2

@@ -464,7 +464,14 @@ func check_swing_hits() -> void:
 		if enemy in has_hit_this_swing:
 			continue  # Already hit this enemy
 
-		if enemy is SlimeEnemy and not enemy.is_dead:
+		# Check if enemy is alive (works for both SlimeEnemy and UfoEnemy)
+		var is_alive = false
+		if enemy is SlimeEnemy:
+			is_alive = not enemy.is_dead
+		elif enemy is UfoEnemy:
+			is_alive = not enemy.is_dead
+
+		if is_alive:
 			var distance = global_position.distance_to(enemy.global_position)
 			if distance < swing_range:
 				# Hit this enemy
@@ -472,10 +479,11 @@ func check_swing_hits() -> void:
 				has_hit_this_swing.append(enemy)
 
 
-func hit_enemy(enemy: SlimeEnemy) -> void:
-	"""Deal damage and knockback to an enemy"""
+func hit_enemy(enemy: Node) -> void:
+	"""Deal damage and knockback to an enemy (SlimeEnemy or UfoEnemy)"""
 	# Deal damage
-	enemy.take_damage(swing_damage)
+	if enemy.has_method("take_damage"):
+		enemy.take_damage(swing_damage)
 
 	# Play hit sound
 	var hit_sound = AudioStreamPlayer.new()
@@ -485,44 +493,16 @@ func hit_enemy(enemy: SlimeEnemy) -> void:
 	hit_sound.play()
 	hit_sound.finished.connect(hit_sound.queue_free)
 
-	# Apply knockback
-	var knockback_direction = (enemy.global_position - global_position).normalized()
-	enemy.apply_central_impulse(knockback_direction * swing_knockback)
+	# Apply knockback (only works for RigidBody2D enemies)
+	if enemy is RigidBody2D:
+		var knockback_direction = (enemy.global_position - global_position).normalized()
+		enemy.apply_central_impulse(knockback_direction * swing_knockback)
 
 
 ## Damage the player
 func take_damage(amount: float, damage_source_pos: Vector2 = Vector2.ZERO) -> void:
-	# Ignore damage if invincible
-	if is_invincible:
-		return
-
-	current_health = max(0, current_health - amount)
-	health_changed.emit(current_health, max_health)
-
-	# Store damage source position
-	last_damage_source_position = damage_source_pos
-
-	# Activate invincibility
-	is_invincible = true
-	invincibility_timer = invincibility_duration
-
-	# Apply knockback away from damage source
-	_apply_knockback()
-
-	# Flash red for damage feedback
-	_flash_red()
-
-	# Play damage sound
-	var damage_sound = AudioStreamPlayer.new()
-	damage_sound.stream = load("res://Assets/sounds/damage.mp3")
-	damage_sound.volume_db = -15.0
-	add_child(damage_sound)
-	damage_sound.play()
-	# Clean up sound after it finishes
-	damage_sound.finished.connect(damage_sound.queue_free)
-
-	if current_health <= 0:
-		die()
+	# Player damage system disabled - game focuses on planet health
+	pass
 
 
 func _apply_knockback() -> void:
